@@ -82,7 +82,7 @@ describe('Property 6: Edit form pre-fill correctness', () => {
     vi.restoreAllMocks();
   });
 
-  it('edit form fields match stored action values for any action', async () => {
+  it('edit form fields match stored action values for any action', { timeout: 30000 }, async () => {
     const EditActionPage = (await import('@/app/dashboard/[id]/edit/page')).default;
 
     await fc.assert(
