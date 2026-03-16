@@ -109,7 +109,7 @@ describe('Property 6: Edit form pre-fill correctness', () => {
         });
 
         // Verify: name input has the action's name
-        const nameInput = screen.getByPlaceholderText('My Scheduled Action') as HTMLInputElement;
+        const nameInput = screen.getByPlaceholderText('e.g. Daily Report, Cleanup Script') as HTMLInputElement;
         expect(nameInput.value).toBe(action.name);
 
         // Verify: script textarea has the action's scriptContent

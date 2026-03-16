@@ -25,29 +25,29 @@ describe("DayBadge", () => {
   it("applies active styling when active is true", () => {
     render(<DayBadge day={0} active={true} />);
     const badge = screen.getByLabelText("Sunday");
-    expect(badge.className).toContain("bg-purple-500/40");
-    expect(badge.className).toContain("text-purple-200");
+    expect(badge.className).toContain("bg-violet-100");
+    expect(badge.className).toContain("text-violet-600");
   });
 
   it("applies inactive styling when active is false", () => {
     render(<DayBadge day={0} active={false} />);
     const badge = screen.getByLabelText("Sunday");
-    expect(badge.className).toContain("bg-white/5");
-    expect(badge.className).toContain("text-slate-600");
+    expect(badge.className).toContain("bg-slate-50");
+    expect(badge.className).toContain("text-slate-300");
   });
 
   it("applies muted styling when active and muted", () => {
     render(<DayBadge day={2} active={true} muted={true} />);
     const badge = screen.getByLabelText("Tuesday");
-    expect(badge.className).toContain("bg-purple-500/30");
-    expect(badge.className).toContain("text-purple-300");
+    expect(badge.className).toContain("bg-violet-50");
+    expect(badge.className).toContain("text-violet-500");
   });
 
   it("ignores muted when inactive", () => {
     render(<DayBadge day={4} active={false} muted={true} />);
     const badge = screen.getByLabelText("Thursday");
-    expect(badge.className).toContain("bg-white/5");
-    expect(badge.className).toContain("text-slate-600");
+    expect(badge.className).toContain("bg-slate-50");
+    expect(badge.className).toContain("text-slate-300");
   });
 
   it("exports DAY_LABELS and DAY_NAMES constants", () => {

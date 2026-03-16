@@ -107,22 +107,16 @@ describe("ActionCard", () => {
     render(
       <ActionCard action={baseAction} onToggle={noop} onTrigger={noop} onDelete={noop} />
     );
-    const editLink = screen.getByText("Edit");
+    const editLink = screen.getByRole("link", { name: "Edit action" });
     expect(editLink).toHaveAttribute("href", "/dashboard/abc-123/edit");
   });
 
-  it("requires confirmation before calling onDelete", () => {
+  it("calls onDelete immediately on single click", () => {
     const onDelete = vi.fn();
     render(
       <ActionCard action={baseAction} onToggle={noop} onTrigger={noop} onDelete={onDelete} />
     );
-    // First click shows confirmation
-    fireEvent.click(screen.getByText("Delete"));
-    expect(onDelete).not.toHaveBeenCalled();
-    expect(screen.getByText("Confirm?")).toBeInTheDocument();
-
-    // Second click confirms
-    fireEvent.click(screen.getByText("Confirm?"));
+    fireEvent.click(screen.getByLabelText("Delete action"));
     expect(onDelete).toHaveBeenCalledWith("abc-123");
   });
 

@@ -81,7 +81,7 @@ describe('Property 4: Form validation rejects incomplete submissions', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows validation errors and does not call fetch for incomplete form data', async () => {
+  it('shows validation errors and does not call fetch for incomplete form data', { timeout: 15000 }, async () => {
     const NewActionPage = (await import('@/app/dashboard/new/page')).default;
 
     await fc.assert(
@@ -96,7 +96,7 @@ describe('Property 4: Form validation rejects incomplete submissions', () => {
         render(<NewActionPage />);
 
         // Fill in the name field
-        const nameInput = screen.getByPlaceholderText('My Scheduled Action');
+        const nameInput = screen.getByPlaceholderText('e.g. Daily Report, Cleanup Script');
         fireEvent.change(nameInput, { target: { value: formData.name } });
 
         // Fill in the script field

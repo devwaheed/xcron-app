@@ -115,11 +115,16 @@ describe('Property 2: Dashboard renders all actions with correct data', () => {
           }
 
           // Verify the number of Active/Paused status badges matches
+          // Filter to only badge <span> elements inside action cards (not stats bar)
           const activeCount = actions.filter((a) => a.status === 'active').length;
           const pausedCount = actions.filter((a) => a.status === 'paused').length;
 
-          const activeBadges = screen.queryAllByText('Active');
-          const pausedBadges = screen.queryAllByText('Paused');
+          const activeBadges = screen
+            .queryAllByText('Active')
+            .filter((el) => el.tagName === 'SPAN' && el.className.includes('ring-'));
+          const pausedBadges = screen
+            .queryAllByText('Paused')
+            .filter((el) => el.tagName === 'SPAN' && el.className.includes('ring-'));
 
           expect(activeBadges.length).toBe(activeCount);
           expect(pausedBadges.length).toBe(pausedCount);

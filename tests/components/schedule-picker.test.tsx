@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import SchedulePicker, { TIMEZONES, getLocalTimezone } from "@/components/SchedulePicker";
+import SchedulePicker, { TIMEZONES, getLocalTimezone, getTimezones } from "@/components/SchedulePicker";
 import type { Schedule } from "@/types";
 
 function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
@@ -132,8 +132,15 @@ describe("SchedulePicker", () => {
     expect(TIMEZONES.length).toBeGreaterThan(10);
   });
 
-  it("getLocalTimezone returns a timezone from the list", () => {
+  it("getLocalTimezone returns a valid IANA timezone string", () => {
     const tz = getLocalTimezone();
-    expect(TIMEZONES).toContain(tz);
+    expect(typeof tz).toBe("string");
+    expect(tz.length).toBeGreaterThan(0);
+  });
+
+  it("getTimezones includes the local timezone", () => {
+    const tz = getLocalTimezone();
+    const all = getTimezones();
+    expect(all).toContain(tz);
   });
 });

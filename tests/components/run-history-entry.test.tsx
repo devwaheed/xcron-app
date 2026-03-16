@@ -33,13 +33,13 @@ describe("RunHistoryEntry", () => {
   it("applies green styling for success badge", () => {
     render(<RunHistoryEntry run={successRun} />);
     const badge = screen.getByText("Success");
-    expect(badge.className).toContain("text-green-400");
+    expect(badge.className).toContain("text-emerald-600");
   });
 
   it("applies red styling for failure badge", () => {
     render(<RunHistoryEntry run={failureRun} />);
     const badge = screen.getByText("Failure");
-    expect(badge.className).toContain("text-red-400");
+    expect(badge.className).toContain("text-red-600");
   });
 
   it("renders the formatted timestamp", () => {

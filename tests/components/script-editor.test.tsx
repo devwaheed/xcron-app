@@ -70,7 +70,7 @@ describe("ScriptEditor", () => {
     const textarea = screen.getByPlaceholderText(
       "Paste your JavaScript code here…"
     );
-    expect(textarea.className).toContain("border-white/10");
-    expect(textarea.className).toContain("bg-white/5");
+    expect(textarea.className).toContain("rounded-xl");
+    expect(textarea.className).toContain("border");
   });
 });

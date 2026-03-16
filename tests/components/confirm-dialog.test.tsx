@@ -80,4 +80,33 @@ describe("ConfirmDialog", () => {
     const confirmBtn = screen.getByText("Confirm");
     expect(confirmBtn.className).toContain("bg-red-500");
   });
+
+  it("disables both buttons when loading is true", () => {
+    render(<ConfirmDialog {...defaultProps} loading={true} />);
+    expect(screen.getByText("Cancel")).toBeDisabled();
+    expect(screen.getByText("Deleting…")).toBeDisabled();
+  });
+
+  it("shows spinner and 'Deleting…' text when loading", () => {
+    render(<ConfirmDialog {...defaultProps} loading={true} />);
+    expect(screen.getByText("Deleting…")).toBeInTheDocument();
+    expect(screen.queryByText("Confirm")).not.toBeInTheDocument();
+  });
+
+  it("does not call onCancel on backdrop click when loading", () => {
+    const onCancel = vi.fn();
+    const { container } = render(
+      <ConfirmDialog {...defaultProps} onCancel={onCancel} loading={true} />
+    );
+    const backdrop = container.firstElementChild as HTMLElement;
+    fireEvent.click(backdrop);
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("does not call onCancel on Escape when loading", () => {
+    const onCancel = vi.fn();
+    render(<ConfirmDialog {...defaultProps} onCancel={onCancel} loading={true} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).not.toHaveBeenCalled();
+  });
 });

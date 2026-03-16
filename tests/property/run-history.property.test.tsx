@@ -175,10 +175,11 @@ describe('Property 13: Run history filter correctness', () => {
           expect(screen.queryByText('Loading run history…')).not.toBeInTheDocument();
         });
 
-        // Change the filter dropdown if not "all" (default)
+        // Change the filter if not "all" (default)
         if (filter !== 'all') {
-          const select = screen.getByLabelText('Filter by status');
-          fireEvent.change(select, { target: { value: filter } });
+          const filterLabel = filter.charAt(0).toUpperCase() + filter.slice(1);
+          const filterButton = screen.getByRole('button', { name: filterLabel });
+          fireEvent.click(filterButton);
 
           // Wait for re-render after filter change
           await waitFor(() => {
@@ -186,14 +187,14 @@ describe('Property 13: Run history filter correctness', () => {
           });
         }
 
-        // Count displayed Success and Failure badges (exclude <option> elements
-        // in the filter dropdown which also contain "Success"/"Failure" text)
+        // Count displayed Success and Failure badges (exclude filter buttons
+        // which also contain "Success"/"Failure" text)
         const successBadges = screen
           .queryAllByText('Success')
-          .filter((el) => el.tagName !== 'OPTION');
+          .filter((el) => el.tagName === 'SPAN' && el.className.includes('ring-'));
         const failureBadges = screen
           .queryAllByText('Failure')
-          .filter((el) => el.tagName !== 'OPTION');
+          .filter((el) => el.tagName === 'SPAN' && el.className.includes('ring-'));
         const totalDisplayed = successBadges.length + failureBadges.length;
 
         const expectedSuccessCount = expectedRuns.filter((r) => r.status === 'success').length;
