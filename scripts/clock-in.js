@@ -5,7 +5,10 @@ const PASSWORD = "[password]";
 const LOGIN_URL = "https://paypeople.app/#/login";
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: "new" });
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
   const page = await browser.newPage();
   page.setDefaultTimeout(30000);
 
