@@ -4,6 +4,7 @@ import { mapRowToAction } from '@/lib/mapRowToAction';
 import { validateSchedule } from '@/lib/schedule-validator';
 import { generate } from '@/lib/workflow-generator';
 import { createGitHubBridge } from '@/lib/github-bridge';
+import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import type { Action, Schedule } from '@/types';
 
 /**
@@ -43,6 +44,17 @@ export async function DELETE(
         { error: 'GitHub operation failed', details: message },
         { status: 502 }
       );
+    }
+
+    // Delete cron-job.org job if it exists
+    if (existing.cron_job_id) {
+      try {
+        const cronBridge = createCronJobBridge();
+        await cronBridge.deleteJob(existing.cron_job_id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error('cron-job.org delete failed (non-fatal):', message);
+      }
     }
 
     // Delete from Supabase
@@ -193,6 +205,21 @@ export async function PUT(
       );
     }
 
+    // Update cron-job.org job schedule
+    let cronJobId = existing.cron_job_id;
+    try {
+      const cronBridge = createCronJobBridge();
+      if (cronJobId) {
+        await cronBridge.updateJob(cronJobId, name.trim(), schedule);
+      } else {
+        // No existing cron job — create one (backfill for actions created before this feature)
+        cronJobId = await cronBridge.createJob(id, name.trim(), schedule, existing.status === 'active');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('cron-job.org update failed (non-fatal):', message);
+    }
+
     // Update Supabase
     const { data, error } = await supabase
       .from('actions')
@@ -204,6 +231,7 @@ export async function PUT(
         time_minute: schedule.minute,
         time_period: schedule.period,
         timezone: schedule.timezone,
+        cron_job_id: cronJobId ?? existing.cron_job_id,
         updated_at: now,
       })
       .eq('id', id)

@@ -73,6 +73,7 @@ function actionToRow(action: Action): Record<string, unknown> {
     timezone: action.schedule.timezone,
     status: action.status,
     github_workflow_id: action.githubWorkflowId ?? null,
+    cron_job_id: action.cronJobId ?? null,
     created_at: action.createdAt,
     updated_at: action.updatedAt,
   };

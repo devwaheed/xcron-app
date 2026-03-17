@@ -4,6 +4,7 @@ import { mapRowToAction } from '@/lib/mapRowToAction';
 import { validateSchedule } from '@/lib/schedule-validator';
 import { generate } from '@/lib/workflow-generator';
 import { createGitHubBridge } from '@/lib/github-bridge';
+import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import type { Action, Schedule } from '@/types';
 
 /**
@@ -110,6 +111,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create cron-job.org job for reliable scheduling
+    let cronJobId: number | undefined;
+    try {
+      const cronBridge = createCronJobBridge();
+      cronJobId = await cronBridge.createJob(actionId, name.trim(), schedule, true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('cron-job.org create failed (non-fatal):', message);
+      // Non-fatal: action still works via GitHub cron as fallback
+    }
+
     // Insert into Supabase
     const supabase = getSupabaseServerClient();
     const { data, error } = await supabase
@@ -124,6 +136,7 @@ export async function POST(request: NextRequest) {
         time_period: schedule.period,
         timezone: schedule.timezone,
         status: 'active',
+        cron_job_id: cronJobId ?? null,
       })
       .select('*')
       .single();

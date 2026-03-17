@@ -4,13 +4,28 @@ import { createGitHubBridge } from '@/lib/github-bridge';
 
 /**
  * POST /api/actions/[id]/trigger
- * Manually triggers a workflow run via GitHub workflow dispatch.
+ * Triggers a workflow run via GitHub workflow dispatch.
+ * Called by cron-job.org on schedule, or manually from the dashboard.
+ * When CRON_SECRET is set, requests from cron-job.org must include
+ * the Authorization: Bearer <secret> header.
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Auth check: if CRON_SECRET is set, validate it.
+    // Skip auth check for requests coming from the app itself (they use cookies).
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get('authorization');
+    const hasCookies = request.headers.has('cookie');
+
+    if (cronSecret && !hasCookies) {
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const { id } = await params;
 
     // Confirm the action exists

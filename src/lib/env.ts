@@ -6,6 +6,9 @@ export interface EnvConfig {
   GITHUB_REPO_OWNER: string;
   GITHUB_REPO_NAME: string;
   GITHUB_PAT: string;
+  CRONJOB_API_KEY: string;
+  CRON_SECRET: string;
+  NEXT_PUBLIC_APP_URL: string;
 }
 
 const requiredVars: (keyof EnvConfig)[] = [
@@ -16,6 +19,9 @@ const requiredVars: (keyof EnvConfig)[] = [
   'GITHUB_REPO_OWNER',
   'GITHUB_REPO_NAME',
   'GITHUB_PAT',
+  'CRONJOB_API_KEY',
+  'CRON_SECRET',
+  'NEXT_PUBLIC_APP_URL',
 ];
 
 export function getEnvConfig(): EnvConfig {
@@ -41,5 +47,8 @@ export function getEnvConfig(): EnvConfig {
     GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER!,
     GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME!,
     GITHUB_PAT: process.env.GITHUB_PAT!,
+    CRONJOB_API_KEY: process.env.CRONJOB_API_KEY!,
+    CRON_SECRET: process.env.CRON_SECRET!,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL!,
   };
 }

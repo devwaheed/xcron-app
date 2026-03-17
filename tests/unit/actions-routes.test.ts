@@ -63,6 +63,7 @@ function makeRow(overrides: Partial<ActionRow> = {}): ActionRow {
     timezone: 'America/New_York',
     status: 'active',
     github_workflow_id: 42,
+    cron_job_id: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-02T00:00:00Z',
     ...overrides,

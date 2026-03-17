@@ -9,6 +9,9 @@ const fullEnv = {
   GITHUB_REPO_OWNER: 'owner',
   GITHUB_REPO_NAME: 'repo',
   GITHUB_PAT: 'ghp_token',
+  CRONJOB_API_KEY: 'cron-api-key',
+  CRON_SECRET: 'cron-secret',
+  NEXT_PUBLIC_APP_URL: 'https://example.com',
 };
 
 describe('getEnvConfig', () => {
@@ -22,6 +25,9 @@ describe('getEnvConfig', () => {
     vi.stubEnv('GITHUB_REPO_OWNER', '');
     vi.stubEnv('GITHUB_REPO_NAME', '');
     vi.stubEnv('GITHUB_PAT', '');
+    vi.stubEnv('CRONJOB_API_KEY', '');
+    vi.stubEnv('CRON_SECRET', '');
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '');
   });
 
   afterEach(() => {

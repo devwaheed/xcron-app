@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ success: true });
 
+    // Store access token — short-lived but we'll refresh it
     response.cookies.set('sb-access-token', data.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -39,6 +40,17 @@ export async function POST(request: NextRequest) {
       path: '/',
       maxAge: data.session.expires_in,
     });
+
+    // Store refresh token — long-lived, used to get new access tokens
+    if (data.session.refresh_token) {
+      response.cookies.set('sb-refresh-token', data.session.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+    }
 
     return response;
   } catch {

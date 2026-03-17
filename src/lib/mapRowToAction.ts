@@ -14,6 +14,7 @@ export interface ActionRow {
   timezone: string;
   status: 'active' | 'paused';
   github_workflow_id: number | null;
+  cron_job_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,7 @@ export function mapRowToAction(row: ActionRow): Action {
     },
     status: row.status,
     githubWorkflowId: row.github_workflow_id ?? undefined,
+    cronJobId: row.cron_job_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

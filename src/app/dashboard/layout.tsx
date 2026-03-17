@@ -4,8 +4,9 @@ import { cookies } from "next/headers";
 
 /**
  * Server-side auth guard for all /dashboard routes.
- * Verifies the Supabase session token from cookies.
- * Redirects to /login if unauthenticated.
+ * Reads the access token from cookies, verifies it with Supabase.
+ * If the token is expired but a refresh token exists, refreshes inline.
+ * Redirects to /login only when there's truly no valid session.
  */
 export default async function DashboardLayout({
   children,
@@ -25,14 +26,18 @@ export default async function DashboardLayout({
     cookieStore.get(
       `sb-${new URL(supabaseUrl).hostname.split(".")[0]}-auth-token`
     )?.value;
+  const refreshToken = cookieStore.get("sb-refresh-token")?.value;
 
-  if (!accessToken) {
+  // No tokens at all — definitely not logged in
+  if (!accessToken && !refreshToken) {
     redirect("/login");
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : {},
     },
     auth: {
       autoRefreshToken: false,
@@ -40,14 +45,31 @@ export default async function DashboardLayout({
     },
   });
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // Try the current access token first
+  if (accessToken) {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-  if (error || !user) {
-    redirect("/login");
+    if (!error && user) {
+      return <>{children}</>;
+    }
   }
 
-  return <>{children}</>;
+  // Access token missing or expired — try refreshing
+  if (refreshToken) {
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+
+    if (!error && data.session && data.user) {
+      // Refresh succeeded — the proxy will set the new cookies on the
+      // response, but we can proceed rendering since we have a valid user.
+      return <>{children}</>;
+    }
+  }
+
+  // Both tokens failed
+  redirect("/login");
 }

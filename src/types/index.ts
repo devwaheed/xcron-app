@@ -21,6 +21,7 @@ export interface Action {
   schedule: Schedule;
   status: 'active' | 'paused';
   githubWorkflowId?: number;
+  cronJobId?: number;
   createdAt: string;
   updatedAt: string;
 }

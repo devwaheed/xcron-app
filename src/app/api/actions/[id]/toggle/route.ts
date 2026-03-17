@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { createGitHubBridge } from '@/lib/github-bridge';
+import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { mapRowToAction } from '@/lib/mapRowToAction';
 
 /**
@@ -46,6 +47,21 @@ export async function POST(
         { error: 'GitHub operation failed', details: message },
         { status: 502 }
       );
+    }
+
+    // Toggle cron-job.org job if it exists
+    if (existing.cron_job_id) {
+      try {
+        const cronBridge = createCronJobBridge();
+        if (newStatus === 'paused') {
+          await cronBridge.disableJob(existing.cron_job_id);
+        } else {
+          await cronBridge.enableJob(existing.cron_job_id);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error('cron-job.org toggle failed (non-fatal):', message);
+      }
     }
 
     // Update status in Supabase

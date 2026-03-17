@@ -17,10 +17,10 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
-    // Session lives in an httpOnly cookie set by the login API,
-    // not in the Supabase browser client. Check via a quick fetch
-    // to an authenticated endpoint instead.
-    fetch("/api/actions", { credentials: "include" })
+    // Try refreshing the session — if it succeeds the user is logged in.
+    // We use the refresh endpoint because /api/actions uses the service
+    // role key and doesn't actually verify the user's auth cookie.
+    fetch("/api/auth/refresh", { method: "POST", credentials: "include" })
       .then((res) => {
         if (res.ok) {
           router.replace("/dashboard");
