@@ -41,14 +41,11 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete }: Ac
       {/* Header — gradient frosted glass */}
       <div className={`flex items-center justify-between gap-3 rounded-t-2xl px-5 py-4 ${
         isPaused
-          ? "bg-gradient-to-r from-slate-50/80 to-slate-100/60"
-          : "bg-gradient-to-r from-white/80 to-indigo-50/60"
-      } backdrop-blur-md`}>
+          ? "bg-gradient-to-r from-slate-100 to-slate-200/80"
+          : "bg-gradient-to-r from-violet-100 to-indigo-100"
+      }`}>
         <div className="min-w-0">
-          <h3
-            className={`truncate text-base font-semibold ${isPaused ? "text-slate-400" : ""}`}
-            style={!isPaused ? { backgroundImage: "linear-gradient(to right, #7c3aed, #4f46e5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" } : undefined}
-          >
+          <h3 className={`truncate text-base font-semibold ${isPaused ? "text-slate-400" : "text-slate-800"}`}>
             {action.name}
           </h3>
           <div className="flex items-center gap-1.5 mt-0.5">

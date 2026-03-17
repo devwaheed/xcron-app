@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getSupabaseBrowserClient } from "@/lib/supabase-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,14 +17,18 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        router.replace("/dashboard");
-      } else {
-        setCheckingAuth(false);
-      }
-    });
+    // Session lives in an httpOnly cookie set by the login API,
+    // not in the Supabase browser client. Check via a quick fetch
+    // to an authenticated endpoint instead.
+    fetch("/api/actions", { credentials: "include" })
+      .then((res) => {
+        if (res.ok) {
+          router.replace("/dashboard");
+        } else {
+          setCheckingAuth(false);
+        }
+      })
+      .catch(() => setCheckingAuth(false));
   }, [router]);
 
   async function handleLogin(e: React.FormEvent) {

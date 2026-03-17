@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowserClient } from "@/lib/supabase-client";
 
 export default function NavAuth() {
   const router = useRouter();
@@ -12,11 +11,15 @@ export default function NavAuth() {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => {
-      setLoggedIn(!!data.session);
-      setChecked(true);
-    });
+    fetch("/api/actions", { credentials: "include" })
+      .then((res) => {
+        setLoggedIn(res.ok);
+        setChecked(true);
+      })
+      .catch(() => {
+        setLoggedIn(false);
+        setChecked(true);
+      });
   }, []);
 
   async function handleLogout() {
