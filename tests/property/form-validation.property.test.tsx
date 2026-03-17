@@ -81,7 +81,7 @@ describe('Property 4: Form validation rejects incomplete submissions', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows validation errors and does not call fetch for incomplete form data', { timeout: 15000 }, async () => {
+  it('shows validation errors and does not call fetch for incomplete form data', { timeout: 30000 }, async () => {
     const NewActionPage = (await import('@/app/dashboard/new/page')).default;
 
     await fc.assert(

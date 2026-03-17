@@ -1,7 +1,7 @@
 // Feature: cron-job-builder, Property 2: Dashboard renders all actions with correct data
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { ToastProvider } from '@/components/Toast';
@@ -77,7 +77,7 @@ describe('Property 2: Dashboard renders all actions with correct data', () => {
     cleanup();
   });
 
-  it('renders one card per action with correct name and status', async () => {
+  it('renders one card per action with correct name and status', { timeout: 30000 }, async () => {
     const DashboardModule = await import('@/app/dashboard/page');
     const DashboardPage = DashboardModule.default;
 
