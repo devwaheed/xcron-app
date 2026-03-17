@@ -45,7 +45,7 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete }: Ac
           : "bg-gradient-to-r from-white/80 to-indigo-50/60"
       } backdrop-blur-md`}>
         <div className="min-w-0">
-          <h3 className={`truncate text-sm font-semibold ${isPaused ? "text-slate-400" : "text-slate-800"}`}>
+          <h3 className={`truncate text-sm font-semibold ${isPaused ? "text-slate-400" : "bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent"}`}>
             {action.name}
           </h3>
           <div className="flex items-center gap-1.5 mt-0.5">
