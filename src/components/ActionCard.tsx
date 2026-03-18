@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Action } from "@/types";
+import { ClockIcon, PlayIcon, PauseIcon, EditIcon, TrashIcon } from "@/components/icons";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
 const DAY_NAMES = [
@@ -61,9 +62,7 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
             {action.name}
           </h3>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 shrink-0">
-              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-            </svg>
+            <ClockIcon size={11} className="text-slate-400 shrink-0" />
             <p className="text-xs text-slate-500 truncate">{timeStr}</p>
           </div>
         </div>
@@ -109,9 +108,9 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
           {toggling ? (
             <Spinner />
           ) : isPaused ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+            <PlayIcon size={15} color="currentColor" />
           ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+            <PauseIcon size={15} color="currentColor" />
           )}
           <span className="sr-only">{isPaused ? "Resume" : "Pause"}</span>
         </button>
@@ -125,9 +124,7 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
           {triggering ? (
             <Spinner />
           ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
+            <PlayIcon size={15} color="currentColor" />
           )}
           <span className="sr-only">Run Now</span>
         </button>
@@ -139,10 +136,7 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
           title="Edit action"
           aria-label="Edit action"
           className="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
+          <EditIcon size={15} color="currentColor" />
         </Link>
 
         {/* History */}
@@ -150,9 +144,7 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
           title="View run history"
           aria-label="View run history"
           className="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-          </svg>
+          <ClockIcon size={15} color="currentColor" />
         </Link>
 
         {/* Delete */}
@@ -161,9 +153,7 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
           title="Delete action"
           aria-label="Delete action"
           className="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 disabled:opacity-50">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          </svg>
+          <TrashIcon size={15} color="currentColor" />
           <span className="sr-only">Delete</span>
         </button>
       </div>

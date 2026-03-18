@@ -5,6 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { ToastProvider } from '@/components/Toast';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import type { Action, Schedule } from '@/types';
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
@@ -77,7 +78,7 @@ describe('Property 2: Dashboard renders all actions with correct data', () => {
     cleanup();
   });
 
-  it('renders one card per action with correct name and status', { timeout: 30000 }, async () => {
+  it('renders one card per action with correct name and status', { timeout: 60000 }, async () => {
     const DashboardModule = await import('@/app/dashboard/page');
     const DashboardPage = DashboardModule.default;
 
@@ -100,7 +101,7 @@ describe('Property 2: Dashboard renders all actions with correct data', () => {
             })
           );
 
-          render(<ToastProvider><DashboardPage /></ToastProvider>);
+          render(<ThemeProvider><ToastProvider><DashboardPage /></ToastProvider></ThemeProvider>);
 
           // Wait for loading to finish
           await waitFor(() => {

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { RunEntry } from "@/types";
 import RunHistoryEntry from "@/components/RunHistoryEntry";
+import EmptyState from "@/components/ui/EmptyState";
 import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 type StatusFilter = "all" | "success" | "failure";
@@ -100,16 +101,15 @@ export default function RunHistoryPage() {
             </div>
           </div>
         ) : runs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-12 backdrop-blur-xl">
-              <p className="mb-2 text-lg font-semibold text-slate-900">No runs found</p>
-              <p className="text-sm text-slate-400">
-                {statusFilter !== "all"
-                  ? "No runs match the selected filter. Try changing the filter."
-                  : "This action hasn't been executed yet."}
-              </p>
-            </div>
-          </div>
+          <EmptyState
+            illustration="no-runs"
+            heading="No runs found"
+            description={
+              statusFilter !== "all"
+                ? "No runs match the selected filter. Try changing the filter."
+                : "This action hasn't been executed yet."
+            }
+          />
         ) : (
           <div className="flex flex-col gap-3">
             {runs.map((run) => (

@@ -1,5 +1,15 @@
 import Link from "next/link";
 import NavAuth from "@/components/NavAuth";
+import { Logo } from "@/components/Logo";
+import ScrollReveal from "@/components/ScrollReveal";
+import {
+  CalendarIcon,
+  BoltIcon,
+  ChartIcon,
+  PauseIcon,
+  CodeIcon,
+  ShieldIcon,
+} from "@/components/icons";
 
 export default function LandingPage() {
   return (
@@ -8,13 +18,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-slate-900">xCron</span>
+            <Logo showWordmark />
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -38,6 +42,7 @@ export default function LandingPage() {
           <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-100/40 blur-[60px]" />
         </div>
 
+        <ScrollReveal>
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm text-violet-700">
             <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
@@ -73,8 +78,10 @@ export default function LandingPage() {
             </a>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Dashboard preview mockup */}
+        <ScrollReveal delay={200}>
         <div className="relative mx-auto mt-20 max-w-5xl">
           <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-violet-200/40 via-indigo-200/40 to-sky-200/40 blur-2xl" />
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-2xl shadow-slate-200/50">
@@ -113,10 +120,12 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* Stats Section */}
       <section id="stats" className="border-y border-slate-100 bg-slate-50/50">
+        <ScrollReveal>
         <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-slate-100 sm:grid-cols-4">
           {[
             { value: "Zero", label: "Servers to manage" },
@@ -132,10 +141,12 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+        </ScrollReveal>
       </section>
 
       {/* Features Section */}
       <section id="features" className="mx-auto max-w-7xl px-6 py-24 lg:py-32">
+        <ScrollReveal>
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
             Everything you need to{" "}
@@ -147,50 +158,64 @@ export default function LandingPage() {
             A complete toolkit for scheduling, monitoring, and managing your scripts.
           </p>
         </div>
+        </ScrollReveal>
 
         <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ScrollReveal className="h-full">
           <FeatureCard
-            icon={<CalendarIcon />}
+            icon={<CalendarIcon size={20} />}
             title="Flexible Scheduling"
             description="Pick any combination of days, set a specific time and timezone. Your scripts run exactly when you need them."
             color="violet"
           />
+          </ScrollReveal>
+          <ScrollReveal delay={100} className="h-full">
           <FeatureCard
-            icon={<BoltIcon />}
+            icon={<BoltIcon size={20} />}
             title="Instant Execution"
             description="Need to run something right now? Trigger any action manually with a single click."
             color="amber"
           />
+          </ScrollReveal>
+          <ScrollReveal delay={200} className="h-full">
           <FeatureCard
-            icon={<ChartIcon />}
+            icon={<ChartIcon size={20} />}
             title="Run History & Logs"
             description="Monitor every execution with detailed logs. See what succeeded, what failed, and when."
             color="sky"
           />
+          </ScrollReveal>
+          <ScrollReveal className="h-full">
           <FeatureCard
-            icon={<PauseIcon />}
+            icon={<PauseIcon size={20} />}
             title="Pause & Resume"
             description="Temporarily stop any action without deleting it. Resume whenever you're ready."
             color="emerald"
           />
+          </ScrollReveal>
+          <ScrollReveal delay={100} className="h-full">
           <FeatureCard
-            icon={<CodeIcon />}
+            icon={<CodeIcon size={20} />}
             title="Script Management"
             description="Paste your code or upload a file. Edit scripts anytime — updates take effect on the next run."
             color="rose"
           />
+          </ScrollReveal>
+          <ScrollReveal delay={200} className="h-full">
           <FeatureCard
-            icon={<ShieldIcon />}
+            icon={<ShieldIcon size={20} />}
             title="Secure by Default"
             description="Protected behind authentication. Only you control what runs and when."
             color="indigo"
           />
+          </ScrollReveal>
         </div>
       </section>
 
       {/* How It Works Section */}
       <section id="how-it-works" className="border-t border-slate-100 bg-slate-50/50 px-6 py-24 lg:py-32">
         <div className="mx-auto max-w-7xl">
+          <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               Three steps to automation
@@ -199,6 +224,7 @@ export default function LandingPage() {
               From zero to scheduled in under a minute.
             </p>
           </div>
+          </ScrollReveal>
 
           <div className="mt-16 grid gap-8 lg:grid-cols-3">
             {[
@@ -220,14 +246,16 @@ export default function LandingPage() {
                 description: "Your script runs automatically on schedule. Monitor every execution and get notified of failures.",
                 gradient: "from-sky-500 to-emerald-500",
               },
-            ].map((item) => (
-              <div key={item.step} className="group relative rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
+            ].map((item, i) => (
+              <ScrollReveal key={item.step} delay={i * 100} className="h-full">
+              <div className="group relative h-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
                 <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${item.gradient} text-sm font-bold text-white`}>
                   {item.step}
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900">{item.title}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-slate-500">{item.description}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -235,6 +263,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="px-6 py-24 lg:py-32">
+        <ScrollReveal>
         <div className="mx-auto max-w-4xl text-center">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-sky-600 px-8 py-16 sm:px-16 sm:py-20">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
@@ -259,21 +288,14 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-slate-100">
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-600 to-indigo-600">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-slate-400">xCron</span>
-            </div>
+            <Logo />
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <a href="#features" className="transition-colors hover:text-slate-600">Features</a>
               <a href="#how-it-works" className="transition-colors hover:text-slate-600">How it works</a>
@@ -311,67 +333,12 @@ function FeatureCard({
 }) {
   const c = colorMap[color] ?? colorMap.violet;
   return (
-    <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
+    <div className="group h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
       <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl ${c.bg} ${c.text}`}>
         {icon}
       </div>
       <h3 className="text-base font-semibold text-slate-900">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p>
     </div>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function BoltIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  );
-}
-
-function ChartIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="6" y="4" width="4" height="16" />
-      <rect x="14" y="4" width="4" height="16" />
-    </svg>
-  );
-}
-
-function CodeIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
-    </svg>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
   );
 }

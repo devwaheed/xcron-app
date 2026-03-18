@@ -2,6 +2,7 @@ import React from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import { ToastProvider } from "@/components/Toast";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -42,9 +43,11 @@ describe("Dashboard error handling", () => {
 
   function renderDashboard() {
     return render(
-      <ToastProvider>
-        <DashboardPage />
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <DashboardPage />
+        </ToastProvider>
+      </ThemeProvider>
     );
   }
 

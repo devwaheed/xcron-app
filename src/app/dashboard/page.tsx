@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Action } from "@/types";
@@ -8,10 +8,21 @@ import ActionCard from "@/components/ActionCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
 import { parseApiResponse, networkErrorMessage, getStatusMessage, isServiceError } from "@/lib/api-client";
+import { isOnboardingComplete } from "@/components/OnboardingFlow";
+import OnboardingFlow from "@/components/OnboardingFlow";
+import EmptyState from "@/components/ui/EmptyState";
+import CommandPalette from "@/components/ui/CommandPalette";
+import type { Command } from "@/components/ui/CommandPalette";
+import { useShortcut } from "@/lib/shortcuts";
+import { useTheme } from "@/components/ThemeProvider";
+import type { ThemeMode } from "@/lib/theme";
+import { Logo } from "@/components/Logo";
+import { PlusIcon, AlertTriangleIcon, XCloseIcon, PauseIcon } from "@/components/icons";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { mode, setMode } = useTheme();
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,6 +32,19 @@ export default function DashboardPage() {
   const [serviceBanner, setServiceBanner] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const [triggeringIds, setTriggeringIds] = useState<Set<string>>(new Set());
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  /** Cycle theme: light → dark → system → light */
+  const cycleTheme = useCallback(() => {
+    const order: ThemeMode[] = ["light", "dark", "system"];
+    const next = order[(order.indexOf(mode) + 1) % order.length];
+    setMode(next);
+  }, [mode, setMode]);
+
+  // Register shortcuts
+  useShortcut("n", () => router.push("/dashboard/new"));
+  useShortcut("t", cycleTheme);
+  useShortcut("k", () => setPaletteOpen((prev) => !prev), { meta: true, preventDefault: true });
 
   /** Centralized error handler for all dashboard API calls. Returns true if error was handled. */
   async function handleError(res: Response, fallback: string): Promise<boolean> {
@@ -116,6 +140,24 @@ export default function DashboardPage() {
   const activeCount = actions.filter((a) => a.status === "active").length;
   const pausedCount = actions.filter((a) => a.status === "paused").length;
 
+  // Build command palette commands
+  const commands = useMemo<Command[]>(() => {
+    const cmds: Command[] = [
+      { id: "nav-dashboard", label: "Go to Dashboard", action: () => router.push("/dashboard"), category: "navigation" },
+      { id: "nav-new", label: "New Action", shortcut: "N", action: () => router.push("/dashboard/new"), category: "action" },
+      { id: "toggle-theme", label: "Toggle Theme", shortcut: "T", action: cycleTheme, category: "settings" },
+    ];
+    for (const action of actions) {
+      cmds.push({
+        id: `nav-action-${action.id}`,
+        label: `Go to ${action.name}`,
+        action: () => router.push(`/dashboard/${action.id}/edit`),
+        category: "navigation",
+      });
+    }
+    return cmds;
+  }, [actions, router, cycleTheme]);
+
   return (
     <div className="min-h-screen bg-white text-slate-900 overflow-hidden">
       {/* Ambient gradient blobs */}
@@ -129,23 +171,16 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-slate-900">xCron</span>
+            <Logo showWordmark />
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/dashboard/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110">
+              <PlusIcon size={14} />
               <span className="hidden sm:inline">New Action</span>
             </Link>
             <button onClick={handleLogout} disabled={loggingOut}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50">
+              className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50">
               {loggingOut ? "Logging out…" : "Log Out"}
             </button>
           </div>
@@ -159,14 +194,11 @@ export default function DashboardPage() {
           <div role="alert" data-testid="service-banner"
             className="mb-6 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 px-5 py-3.5 text-sm text-amber-700 backdrop-blur-xl">
             <div className="flex items-center gap-2.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-500">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
+              <AlertTriangleIcon size={16} className="shrink-0 text-amber-500" />
               <span>Service connection issue — the service may be inaccessible or the token may be invalid.</span>
             </div>
             <button onClick={() => setServiceBanner(false)} className="ml-4 shrink-0 rounded-lg p-1 text-amber-500 transition-all hover:bg-amber-100" aria-label="Dismiss service connection banner">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              <XCloseIcon size={14} />
             </button>
           </div>
         )}
@@ -177,8 +209,8 @@ export default function DashboardPage() {
 
         {/* Stats bar */}
         {!loading && actions.length > 0 && (
-          <div className="mb-8 grid grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl">
+          <div className="mb-8 flex gap-4 overflow-x-auto sm:grid sm:grid-cols-3">
+            <div className="min-w-[200px] shrink-0 rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl sm:min-w-0 sm:shrink">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500">
@@ -191,7 +223,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl">
+            <div className="min-w-[200px] shrink-0 rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl sm:min-w-0 sm:shrink">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
@@ -204,12 +236,10 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl">
+            <div className="min-w-[200px] shrink-0 rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl sm:min-w-0 sm:shrink">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
-                    <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
-                  </svg>
+                  <PauseIcon size={18} className="text-amber-500" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-500">Paused</p>
@@ -221,30 +251,64 @@ export default function DashboardPage() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="flex flex-col items-center gap-4">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
-              <p className="text-sm text-slate-400">Loading actions…</p>
+          <>
+            {/* Skeleton stats bar */}
+            <div className="mb-8 flex gap-4 overflow-x-auto sm:grid sm:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="min-w-[200px] shrink-0 rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-xl sm:min-w-0 sm:shrink">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                      <div className="h-5 w-8 animate-pulse rounded bg-slate-100" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+            {/* Skeleton action cards */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="rounded-2xl border border-slate-200/60 bg-white/70 shadow-sm shadow-slate-200/50 backdrop-blur-xl">
+                  <div className="flex items-center justify-between gap-3 rounded-t-2xl bg-gradient-to-r from-slate-100 to-slate-50 px-5 py-4">
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 animate-pulse rounded bg-slate-200/70" />
+                      <div className="h-3 w-24 animate-pulse rounded bg-slate-200/50" />
+                    </div>
+                    <div className="h-6 w-14 animate-pulse rounded-full bg-slate-200/60" />
+                  </div>
+                  <div className="px-5 py-4">
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2, 3, 4, 5, 6].map((d) => (
+                        <div key={d} className="h-7 w-7 animate-pulse rounded-lg bg-slate-100" />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 border-t border-slate-100/80 px-4 py-2.5">
+                    {[0, 1, 2, 3, 4].map((b) => (
+                      <div key={b} className="h-8 w-8 animate-pulse rounded-lg bg-slate-100" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : actions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-12 shadow-sm shadow-slate-200/50 backdrop-blur-xl">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-50">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500">
-                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                </svg>
-              </div>
-              <p className="mb-2 text-lg font-semibold text-slate-800">No actions yet</p>
-              <p className="mb-8 text-sm text-slate-500">Create your first scheduled action to get started.</p>
-              <Link href="/dashboard/new"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110">
-                Create Your First Action
-              </Link>
-            </div>
-          </div>
+          isOnboardingComplete() ? (
+            <EmptyState
+              illustration="no-actions"
+              heading="No actions yet"
+              description="Create your first scheduled action to get started."
+              action={{ label: "Create Your First Action", onClick: () => router.push("/dashboard/new") }}
+            />
+          ) : (
+            <OnboardingFlow
+              onSelectTemplate={() => router.push("/dashboard/new")}
+              onDismiss={() => fetchActions()}
+            />
+          )
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {actions.map((action) => (
               <ActionCard key={action.id} action={action}
                 onToggle={handleToggle} onTrigger={handleTrigger} onDelete={(id) => setDeleteTarget(id)}
@@ -261,6 +325,8 @@ export default function DashboardPage() {
         onCancel={() => { if (!deleting) setDeleteTarget(null); }}
         loading={deleting}
       />
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
     </div>
   );
 }

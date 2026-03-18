@@ -1,41 +1,377 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+ * Light Token Set (:root)
+ * Generated from lightTokens in src/lib/design-tokens.ts
+ * --------------------------------------------------------------------------- */
+
 :root {
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-accent: #7c3aed;
-  --color-accent-hover: #6d28d9;
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #64748b;
-  --color-text-muted: #94a3b8;
+  /* Colors — Primary */
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #7c3aed;
+  --color-primary-600: #6d28d9;
+  --color-primary-700: #5b21b6;
+  --color-primary-800: #4c1d95;
+  --color-primary-900: #3b0764;
+  --color-primary-950: #2e1065;
+
+  /* Colors — Secondary */
+  --color-secondary-50: #f0f9ff;
+  --color-secondary-100: #e0f2fe;
+  --color-secondary-200: #bae6fd;
+  --color-secondary-300: #7dd3fc;
+  --color-secondary-400: #38bdf8;
+  --color-secondary-500: #0ea5e9;
+  --color-secondary-600: #0284c7;
+  --color-secondary-700: #0369a1;
+  --color-secondary-800: #075985;
+  --color-secondary-900: #0c4a6e;
+  --color-secondary-950: #082f49;
+
+  /* Colors — Accent */
+  --color-accent-50: #fdf4ff;
+  --color-accent-100: #fae8ff;
+  --color-accent-200: #f5d0fe;
+  --color-accent-300: #f0abfc;
+  --color-accent-400: #e879f9;
+  --color-accent-500: #d946ef;
+  --color-accent-600: #c026d3;
+  --color-accent-700: #a21caf;
+  --color-accent-800: #86198f;
+  --color-accent-900: #701a75;
+  --color-accent-950: #4a044e;
+
+  /* Colors — Success */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-300: #6ee7b7;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
+  --color-success-950: #022c22;
+
+  /* Colors — Warning */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning-950: #451a03;
+
+  /* Colors — Error */
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+  --color-error-950: #450a0a;
+
+  /* Colors — Surface */
+  --color-surface-bg: #ffffff;
+  --color-surface-bgSecondary: #f8fafc;
+  --color-surface-bgTertiary: #f1f5f9;
+
+  /* Colors — Neutral */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-neutral-950: #020617;
+
+  /* Spacing */
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 28px;
+  --spacing-8: 32px;
+  --spacing-9: 36px;
+  --spacing-10: 40px;
+  --spacing-11: 44px;
+  --spacing-12: 48px;
+  --spacing-14: 56px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  --spacing-28: 112px;
+  --spacing-32: 128px;
+  --spacing-36: 144px;
+  --spacing-40: 160px;
+  --spacing-44: 176px;
+  --spacing-48: 192px;
+  --spacing-52: 208px;
+  --spacing-56: 224px;
+  --spacing-60: 240px;
+  --spacing-64: 256px;
+  --spacing-72: 288px;
+  --spacing-80: 320px;
+  --spacing-96: 384px;
+
+  /* Typography — Font Families */
+  --typography-fontFamilies-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --typography-fontFamilies-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Typography — Font Sizes */
+  --typography-fontSizes-xs: 0.75rem;
+  --typography-fontSizes-xs-line-height: 1rem;
+  --typography-fontSizes-sm: 0.875rem;
+  --typography-fontSizes-sm-line-height: 1.25rem;
+  --typography-fontSizes-base: 1rem;
+  --typography-fontSizes-base-line-height: 1.5rem;
+  --typography-fontSizes-lg: 1.125rem;
+  --typography-fontSizes-lg-line-height: 1.75rem;
+  --typography-fontSizes-xl: 1.25rem;
+  --typography-fontSizes-xl-line-height: 1.75rem;
+  --typography-fontSizes-2xl: 1.5rem;
+  --typography-fontSizes-2xl-line-height: 2rem;
+  --typography-fontSizes-3xl: 1.875rem;
+  --typography-fontSizes-3xl-line-height: 2.25rem;
+  --typography-fontSizes-4xl: 2.25rem;
+  --typography-fontSizes-4xl-line-height: 2.5rem;
+
+  /* Typography — Font Weights */
+  --typography-fontWeights-normal: 400;
+  --typography-fontWeights-medium: 500;
+  --typography-fontWeights-semibold: 600;
+  --typography-fontWeights-bold: 700;
+
+  /* Border Radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Legacy aliases for backward compatibility */
+  --color-bg-primary: var(--color-surface-bg);
+  --color-bg-secondary: var(--color-surface-bgSecondary);
+  --color-accent: var(--color-primary-500);
+  --color-accent-hover: var(--color-primary-600);
+  --color-text-primary: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-500);
+  --color-text-muted: var(--color-neutral-400);
   --color-border: rgba(226, 232, 240, 0.6);
-  --color-success: #059669;
-  --color-error: #dc2626;
+  --color-success: var(--color-success-600);
+  --color-error: var(--color-error-600);
 
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-bg-hover: rgba(255, 255, 255, 0.8);
   --glass-blur: 24px;
   --glass-border: rgba(226, 232, 240, 0.6);
 
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--typography-fontFamilies-sans);
+  --font-mono: var(--typography-fontFamilies-mono);
 
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ---------------------------------------------------------------------------
+ * Dark Token Set (.dark)
+ * Generated from darkTokens in src/lib/design-tokens.ts
+ * Only overrides values that differ from light (colors + shadows)
+ * --------------------------------------------------------------------------- */
+
+.dark {
+  /* Colors — Primary */
+  --color-primary-50: #2e1065;
+  --color-primary-100: #3b0764;
+  --color-primary-200: #4c1d95;
+  --color-primary-300: #5b21b6;
+  --color-primary-400: #6d28d9;
+  --color-primary-500: #a78bfa;
+  --color-primary-600: #c4b5fd;
+  --color-primary-700: #ddd6fe;
+  --color-primary-800: #ede9fe;
+  --color-primary-900: #f5f3ff;
+  --color-primary-950: #faf5ff;
+
+  /* Colors — Secondary */
+  --color-secondary-50: #082f49;
+  --color-secondary-100: #0c4a6e;
+  --color-secondary-200: #075985;
+  --color-secondary-300: #0369a1;
+  --color-secondary-400: #0284c7;
+  --color-secondary-500: #38bdf8;
+  --color-secondary-600: #7dd3fc;
+  --color-secondary-700: #bae6fd;
+  --color-secondary-800: #e0f2fe;
+  --color-secondary-900: #f0f9ff;
+  --color-secondary-950: #f8faff;
+
+  /* Colors — Accent */
+  --color-accent-50: #4a044e;
+  --color-accent-100: #701a75;
+  --color-accent-200: #86198f;
+  --color-accent-300: #a21caf;
+  --color-accent-400: #c026d3;
+  --color-accent-500: #e879f9;
+  --color-accent-600: #f0abfc;
+  --color-accent-700: #f5d0fe;
+  --color-accent-800: #fae8ff;
+  --color-accent-900: #fdf4ff;
+  --color-accent-950: #fefaff;
+
+  /* Colors — Success */
+  --color-success-50: #022c22;
+  --color-success-100: #064e3b;
+  --color-success-200: #065f46;
+  --color-success-300: #047857;
+  --color-success-400: #059669;
+  --color-success-500: #34d399;
+  --color-success-600: #6ee7b7;
+  --color-success-700: #a7f3d0;
+  --color-success-800: #d1fae5;
+  --color-success-900: #ecfdf5;
+  --color-success-950: #f0fdf8;
+
+  /* Colors — Warning */
+  --color-warning-50: #451a03;
+  --color-warning-100: #78350f;
+  --color-warning-200: #92400e;
+  --color-warning-300: #b45309;
+  --color-warning-400: #d97706;
+  --color-warning-500: #fbbf24;
+  --color-warning-600: #fcd34d;
+  --color-warning-700: #fde68a;
+  --color-warning-800: #fef3c7;
+  --color-warning-900: #fffbeb;
+  --color-warning-950: #fffdf5;
+
+  /* Colors — Error */
+  --color-error-50: #450a0a;
+  --color-error-100: #7f1d1d;
+  --color-error-200: #991b1b;
+  --color-error-300: #b91c1c;
+  --color-error-400: #dc2626;
+  --color-error-500: #f87171;
+  --color-error-600: #fca5a5;
+  --color-error-700: #fecaca;
+  --color-error-800: #fee2e2;
+  --color-error-900: #fef2f2;
+  --color-error-950: #fff5f5;
+
+  /* Colors — Surface */
+  --color-surface-bg: #0f172a;
+  --color-surface-bgSecondary: #1e293b;
+  --color-surface-bgTertiary: #334155;
+
+  /* Colors — Neutral */
+  --color-neutral-50: #020617;
+  --color-neutral-100: #0f172a;
+  --color-neutral-200: #1e293b;
+  --color-neutral-300: #334155;
+  --color-neutral-400: #475569;
+  --color-neutral-500: #94a3b8;
+  --color-neutral-600: #cbd5e1;
+  --color-neutral-700: #e2e8f0;
+  --color-neutral-800: #f1f5f9;
+  --color-neutral-900: #f8fafc;
+  --color-neutral-950: #ffffff;
+
+  /* Shadows (darker for dark mode) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+
+  /* Legacy aliases for dark mode */
+  --color-border: rgba(51, 65, 85, 0.6);
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-bg-hover: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(51, 65, 85, 0.6);
+}
+
+/* ---------------------------------------------------------------------------
+ * Tailwind v4 @theme inline — maps CSS custom properties to Tailwind utilities
+ * --------------------------------------------------------------------------- */
+
 @theme inline {
-  --color-background: var(--color-bg-primary);
-  --color-foreground: var(--color-text-primary);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Background & Foreground */
+  --color-background: var(--color-surface-bg);
+  --color-foreground: var(--color-neutral-900);
+
+  /* Primary palette */
+  --color-primary: var(--color-primary-500);
+  --color-primary-light: var(--color-primary-400);
+  --color-primary-dark: var(--color-primary-700);
+
+  /* Secondary palette */
+  --color-secondary: var(--color-secondary-500);
+  --color-secondary-light: var(--color-secondary-400);
+  --color-secondary-dark: var(--color-secondary-700);
+
+  /* Accent palette */
+  --color-accent: var(--color-accent-500);
+  --color-accent-light: var(--color-accent-400);
+  --color-accent-dark: var(--color-accent-700);
+
+  /* Semantic colors */
+  --color-success: var(--color-success-500);
+  --color-warning: var(--color-warning-500);
+  --color-error: var(--color-error-500);
+
+  /* Surface colors */
+  --color-surface: var(--color-surface-bg);
+  --color-surface-secondary: var(--color-surface-bgSecondary);
+  --color-surface-tertiary: var(--color-surface-bgTertiary);
+
+  /* Neutral text/border colors */
+  --color-muted: var(--color-neutral-400);
+  --color-border: var(--color-neutral-200);
+
+  /* Fonts */
+  --font-sans: var(--typography-fontFamilies-sans);
+  --font-mono: var(--typography-fontFamilies-mono);
+}
+
+/* ---------------------------------------------------------------------------
+ * Base Styles
+ * --------------------------------------------------------------------------- */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
+  background: var(--color-surface-bg);
+  color: var(--color-neutral-900);
+  font-family: var(--typography-fontFamilies-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -45,7 +381,7 @@ body {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  border-radius: 1rem;
+  border-radius: var(--radius-2xl);
 }
 
 .glass:hover {
@@ -55,6 +391,10 @@ body {
 button, a, input, select, textarea {
   transition: all var(--transition-base);
 }
+
+/* ---------------------------------------------------------------------------
+ * Animations
+ * --------------------------------------------------------------------------- */
 
 @keyframes toast-slide-in {
   from { transform: translateX(100%); opacity: 0; }
@@ -75,3 +415,20 @@ button, a, input, select, textarea {
 }
 
 .animate-fade-in { animation: fade-in var(--transition-slow) ease-out forwards; }
+
+/* ---------------------------------------------------------------------------
+ * Scroll Reveal Animations
+ * --------------------------------------------------------------------------- */
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.scroll-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
