@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/Toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,10 +15,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#7c3aed",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "xCron — Cron Job Builder",
   description:
     "Schedule and manage automated JavaScript actions with a clean, modern dashboard.",
+  applicationName: "xCron",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "xCron",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -57,6 +73,7 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
