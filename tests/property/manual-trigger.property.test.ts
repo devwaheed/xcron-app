@@ -100,34 +100,66 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
     mockTriggerWorkflow.mockResolvedValue(undefined);
   });
 
-  it('for any action with a valid workflow ID, trigger endpoint calls triggerWorkflow with correct action ID', async () => {
+  it('for any active action, trigger endpoint calls triggerWorkflow with correct action ID', async () => {
     const { POST } = await import('@/app/api/actions/[id]/trigger/route');
 
     await fc.assert(
-      fc.asyncProperty(arbitraryAction, async (action) => {
-        vi.clearAllMocks();
-        mockTriggerWorkflow.mockResolvedValue(undefined);
+      fc.asyncProperty(
+        arbitraryAction.filter((a) => a.status === 'active'),
+        async (action) => {
+          vi.clearAllMocks();
+          mockTriggerWorkflow.mockResolvedValue(undefined);
 
-        // Set up Supabase to return the action (confirming it exists)
-        const row = actionToRow(action);
-        setupSupabaseFetch({ id: action.id });
+          // Set up Supabase to return the action (confirming it exists and is active)
+          const row = actionToRow(action);
+          setupSupabaseFetch({ id: action.id, status: 'active' });
 
-        const request = new Request(
-          `http://localhost/api/actions/${action.id}/trigger`,
-          { method: 'POST' },
-        );
+          const request = new Request(
+            `http://localhost/api/actions/${action.id}/trigger`,
+            { method: 'POST' },
+          );
 
-        const response = await POST(request as any, {
-          params: Promise.resolve({ id: action.id }),
-        });
+          const response = await POST(request as any, {
+            params: Promise.resolve({ id: action.id }),
+          });
 
-        // Should succeed
-        expect(response.status).toBe(200);
+          // Should succeed
+          expect(response.status).toBe(200);
 
-        // triggerWorkflow must have been called exactly once with the action's ID
-        expect(mockTriggerWorkflow).toHaveBeenCalledTimes(1);
-        expect(mockTriggerWorkflow).toHaveBeenCalledWith(action.id);
-      }),
+          // triggerWorkflow must have been called exactly once with the action's ID
+          expect(mockTriggerWorkflow).toHaveBeenCalledTimes(1);
+          expect(mockTriggerWorkflow).toHaveBeenCalledWith(action.id);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it('for any paused action, trigger endpoint returns 409 and does not dispatch', async () => {
+    const { POST } = await import('@/app/api/actions/[id]/trigger/route');
+
+    await fc.assert(
+      fc.asyncProperty(
+        arbitraryAction.filter((a) => a.status === 'paused'),
+        async (action) => {
+          vi.clearAllMocks();
+          mockTriggerWorkflow.mockResolvedValue(undefined);
+
+          setupSupabaseFetch({ id: action.id, status: 'paused' });
+
+          const request = new Request(
+            `http://localhost/api/actions/${action.id}/trigger`,
+            { method: 'POST' },
+          );
+
+          const response = await POST(request as any, {
+            params: Promise.resolve({ id: action.id }),
+          });
+
+          expect(response.status).toBe(409);
+          expect(mockTriggerWorkflow).not.toHaveBeenCalled();
+        },
+      ),
       { numRuns: 100 },
     );
   });

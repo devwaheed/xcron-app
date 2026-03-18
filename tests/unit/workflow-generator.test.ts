@@ -37,12 +37,10 @@ describe('WorkflowGenerator.generate', () => {
     expect(parsed.name).toBe('Daily Scraper');
   });
 
-  it('includes a schedule trigger with a cron expression', () => {
+  it('does not include a schedule trigger (cron-job.org handles scheduling)', () => {
     const action = makeAction();
     const parsed = YAML.parse(generate(action));
-    expect(parsed.on.schedule).toHaveLength(1);
-    expect(parsed.on.schedule[0].cron).toBeDefined();
-    expect(typeof parsed.on.schedule[0].cron).toBe('string');
+    expect(parsed.on.schedule).toBeUndefined();
   });
 
   it('includes a workflow_dispatch trigger', () => {
@@ -91,7 +89,7 @@ describe('WorkflowGenerator.generate', () => {
     expect(parsed.jobs.run['runs-on']).toBe('ubuntu-latest');
   });
 
-  it('generates correct cron for a UTC schedule', () => {
+  it('does not include a cron expression (scheduling delegated to cron-job.org)', () => {
     const action = makeAction({
       schedule: {
         days: [0, 6],
@@ -102,7 +100,8 @@ describe('WorkflowGenerator.generate', () => {
       },
     });
     const parsed = YAML.parse(generate(action));
-    expect(parsed.on.schedule[0].cron).toBe('0 15 * * 0,6');
+    expect(parsed.on.schedule).toBeUndefined();
+    expect(parsed.on.workflow_dispatch).toBeDefined();
   });
 
   it('step ordering is checkout → setup-node → install deps → run script', () => {
@@ -117,7 +116,7 @@ describe('WorkflowGenerator.generate', () => {
     expect(steps[3].name).toBe('Run script');
   });
 
-  it('cron expression matches buildCron output for the action schedule', () => {
+  it('does not embed buildCron output (cron-job.org handles scheduling)', () => {
     const action = makeAction({
       schedule: {
         days: [1, 3, 5],
@@ -128,7 +127,6 @@ describe('WorkflowGenerator.generate', () => {
       },
     });
     const parsed = YAML.parse(generate(action));
-    const expectedCron = buildCron(action.schedule);
-    expect(parsed.on.schedule[0].cron).toBe(expectedCron);
+    expect(parsed.on.schedule).toBeUndefined();
   });
 });

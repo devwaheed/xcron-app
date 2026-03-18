@@ -7,6 +7,7 @@ import type { Action, Schedule } from "@/types";
 import GlassCard from "@/components/GlassCard";
 import ScriptEditor from "@/components/ScriptEditor";
 import SchedulePicker, { getLocalTimezone } from "@/components/SchedulePicker";
+import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 interface FormErrors {
   name?: string;
@@ -50,12 +51,17 @@ export default function EditActionPage() {
     async function fetchAction() {
       try {
         const res = await fetch(`/api/actions/${actionId}`);
-        if (!res.ok) { setLoadError("Failed to load action"); setLoading(false); return; }
+        if (!res.ok) {
+          const apiError = await parseApiResponse(res, "Failed to load action");
+          setLoadError(apiError.message);
+          setLoading(false);
+          return;
+        }
         const action: Action = await res.json();
         setName(action.name);
         setScript(action.scriptContent);
         setSchedule(action.schedule);
-      } catch { setLoadError("Failed to load action"); }
+      } catch { setLoadError(networkErrorMessage("Failed to load action")); }
       finally { setLoading(false); }
     }
     fetchAction();
@@ -74,13 +80,16 @@ export default function EditActionPage() {
         body: JSON.stringify({ name: name.trim(), scriptContent: script, schedule }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "Request failed" }));
-        setErrors({ api: data.error || "Failed to update action" });
-        setSubmitting(false);
+        const apiError = await parseApiResponse(res, "Failed to update action");
+        setErrors({ api: apiError.message });
         return;
       }
       router.push("/dashboard");
-    } catch { setErrors({ api: "Network error. Please try again." }); setSubmitting(false); }
+    } catch {
+      setErrors({ api: networkErrorMessage("Failed to update action") });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loading) {

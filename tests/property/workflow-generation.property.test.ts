@@ -11,11 +11,10 @@ import type { Action, Schedule } from '@/types';
  *
  * For any valid action configuration, the generated GitHub Actions workflow
  * YAML should be valid YAML and should contain:
- * (a) a schedule trigger with a cron expression
- * (b) a workflow_dispatch trigger
- * (c) a Node.js setup step (actions/setup-node)
- * (d) a dependency installation step including Puppeteer
- * (e) a script execution step referencing scripts/{actionId}.js
+ * (a) a workflow_dispatch trigger (scheduling is handled by cron-job.org)
+ * (b) a Node.js setup step (actions/setup-node)
+ * (c) a dependency installation step including Puppeteer
+ * (d) a script execution step referencing scripts/{actionId}.js
  */
 
 const IANA_TIMEZONES = [
@@ -64,16 +63,11 @@ describe('Property 14: Generated workflow structure completeness', () => {
         expect(parsed).toBeDefined();
         expect(typeof parsed).toBe('object');
 
-        // (a) schedule trigger with a cron expression
+        // (a) workflow_dispatch trigger (cron-job.org handles scheduling)
         expect(parsed.on).toBeDefined();
-        expect(parsed.on.schedule).toBeDefined();
-        expect(Array.isArray(parsed.on.schedule)).toBe(true);
-        expect(parsed.on.schedule.length).toBeGreaterThanOrEqual(1);
-        expect(typeof parsed.on.schedule[0].cron).toBe('string');
-        expect(parsed.on.schedule[0].cron.trim().length).toBeGreaterThan(0);
-
-        // (b) workflow_dispatch trigger
         expect(parsed.on.workflow_dispatch).toBeDefined();
+        // No schedule trigger — scheduling is delegated to cron-job.org
+        expect(parsed.on.schedule).toBeUndefined();
 
         // Verify steps exist
         expect(parsed.jobs).toBeDefined();
@@ -82,21 +76,21 @@ describe('Property 14: Generated workflow structure completeness', () => {
 
         const steps = parsed.jobs.run.steps;
 
-        // (c) Node.js setup step (actions/setup-node)
+        // (b) Node.js setup step (actions/setup-node)
         const setupNodeStep = steps.find(
           (s: Record<string, unknown>) =>
             typeof s.uses === 'string' && s.uses.startsWith('actions/setup-node'),
         );
         expect(setupNodeStep).toBeDefined();
 
-        // (d) dependency installation step including Puppeteer
+        // (c) dependency installation step including Puppeteer
         const installStep = steps.find(
           (s: Record<string, unknown>) =>
             typeof s.run === 'string' && s.run.includes('puppeteer'),
         );
         expect(installStep).toBeDefined();
 
-        // (e) script execution step referencing scripts/{actionId}.js
+        // (d) script execution step referencing scripts/{actionId}.js
         const scriptStep = steps.find(
           (s: Record<string, unknown>) =>
             typeof s.run === 'string' && s.run.includes(`scripts/${action.id}.js`),

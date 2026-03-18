@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { RunEntry } from "@/types";
 import RunHistoryEntry from "@/components/RunHistoryEntry";
+import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 type StatusFilter = "all" | "success" | "failure";
 
@@ -27,14 +28,14 @@ export default function RunHistoryPage() {
       if (statusFilter !== "all") query.set("status", statusFilter);
       const res = await fetch(`/api/actions/${actionId}/runs?${query}`);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "Failed to load runs" }));
-        setError(data.error || "Failed to load runs");
+        const apiError = await parseApiResponse(res, "Failed to load runs");
+        setError(apiError.message);
         setRuns([]); setHasMore(false); return;
       }
       const data: RunEntry[] = await res.json();
       setRuns(data);
       setHasMore(data.length >= 30);
-    } catch { setError("Failed to load runs"); setRuns([]); setHasMore(false); }
+    } catch { setError(networkErrorMessage("Failed to load runs")); setRuns([]); setHasMore(false); }
     finally { setLoading(false); }
   }, [actionId, page, statusFilter]);
 

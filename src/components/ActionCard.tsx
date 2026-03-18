@@ -13,6 +13,17 @@ interface ActionCardProps {
   onToggle: (id: string) => void | Promise<void>;
   onTrigger: (id: string) => void | Promise<void>;
   onDelete: (id: string) => void | Promise<void>;
+  toggling?: boolean;
+  triggering?: boolean;
+}
+
+function Spinner({ className = "" }: { className?: string }) {
+  return (
+    <svg className={`animate-spin ${className}`} width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
 }
 
 function formatTime(action: Action): string {
@@ -32,9 +43,10 @@ function buildDayTooltip(action: Action): string {
   return `${dayNames.join(", ")} at ${hour}:${m} ${period} (${timezone})`;
 }
 
-export default function ActionCard({ action, onToggle, onTrigger, onDelete }: ActionCardProps) {
+export default function ActionCard({ action, onToggle, onTrigger, onDelete, toggling = false, triggering = false }: ActionCardProps) {
   const isPaused = action.status === "paused";
   const timeStr = formatTime(action);
+  const busy = toggling || triggering;
 
   return (
     <div className={`group relative rounded-2xl border border-slate-200/60 bg-white/70 shadow-sm shadow-slate-200/50 backdrop-blur-xl transition-all hover:border-slate-300/80 hover:shadow-md hover:shadow-slate-200/60 ${isPaused ? "opacity-60" : ""}`}>
@@ -86,14 +98,17 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete }: Ac
       <div className="flex items-center gap-1 border-t border-slate-100/80 px-4 py-2.5">
         {/* Toggle: show Running (active) or Paused state, click to toggle */}
         <button onClick={() => onToggle(action.id)}
+          disabled={busy}
           title={isPaused ? "Resume action" : "Pause action"}
           aria-label={isPaused ? "Resume action" : "Pause action"}
-          className={`inline-flex items-center justify-center rounded-lg p-2 transition-all ${
+          className={`inline-flex items-center justify-center rounded-lg p-2 transition-all disabled:opacity-50 ${
             isPaused
               ? "text-emerald-600 hover:bg-emerald-50"
               : "text-amber-600 hover:bg-amber-50"
           }`}>
-          {isPaused ? (
+          {toggling ? (
+            <Spinner />
+          ) : isPaused ? (
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
           ) : (
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
@@ -103,12 +118,17 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete }: Ac
 
         {/* Force run */}
         <button onClick={() => onTrigger(action.id)}
+          disabled={busy}
           title="Force run now"
           aria-label="Run now"
-          className="inline-flex items-center justify-center rounded-lg p-2 text-violet-600 transition-all hover:bg-violet-50">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
+          className="inline-flex items-center justify-center rounded-lg p-2 text-violet-600 transition-all hover:bg-violet-50 disabled:opacity-50">
+          {triggering ? (
+            <Spinner />
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          )}
           <span className="sr-only">Run Now</span>
         </button>
 
@@ -137,9 +157,10 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete }: Ac
 
         {/* Delete */}
         <button onClick={() => onDelete(action.id)}
+          disabled={busy}
           title="Delete action"
           aria-label="Delete action"
-          className="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500">
+          className="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 disabled:opacity-50">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>

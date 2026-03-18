@@ -60,7 +60,11 @@ export async function POST(
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        console.error('cron-job.org toggle failed (non-fatal):', message);
+        console.error('cron-job.org toggle failed:', message);
+        return NextResponse.json(
+          { error: 'Cron job toggle failed', details: message },
+          { status: 502 }
+        );
       }
     }
 

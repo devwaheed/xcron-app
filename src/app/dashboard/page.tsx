@@ -7,25 +7,7 @@ import type { Action } from "@/types";
 import ActionCard from "@/components/ActionCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
-
-function handleApiError(
-  res: Response,
-  context: string,
-  showToast: (msg: string, variant?: "success" | "error") => void,
-  router: ReturnType<typeof useRouter>,
-  setGitHubBanner: (v: boolean) => void,
-): boolean {
-  if (res.ok) return false;
-  if (res.status === 401) { showToast("Session expired. Redirecting to login…", "error"); router.push("/login"); return true; }
-  if (res.status === 429) { showToast("Rate limit exceeded. Please wait and try again.", "error"); return true; }
-  if (res.status === 502) { setGitHubBanner(true); showToast(`GitHub connection issue: ${context}`, "error"); return true; }
-  showToast(`Something went wrong: ${context}`, "error");
-  return true;
-}
-
-function handleNetworkError(context: string, showToast: (msg: string, variant?: "success" | "error") => void) {
-  showToast(`Connection failed: ${context}. Check your network and try again.`, "error");
-}
+import { parseApiResponse, networkErrorMessage, getStatusMessage, isServiceError } from "@/lib/api-client";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -36,19 +18,46 @@ export default function DashboardPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [gitHubBanner, setGitHubBanner] = useState(false);
+  const [serviceBanner, setServiceBanner] = useState(false);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const [triggeringIds, setTriggeringIds] = useState<Set<string>>(new Set());
+
+  /** Centralized error handler for all dashboard API calls. Returns true if error was handled. */
+  async function handleError(res: Response, fallback: string): Promise<boolean> {
+    if (res.ok) return false;
+
+    const statusMsg = getStatusMessage(res.status);
+    if (statusMsg) {
+      showToast(statusMsg, "error");
+      if (res.status === 401) router.push("/login");
+      return true;
+    }
+
+    const apiError = await parseApiResponse(res, fallback);
+
+    if (isServiceError(res.status)) {
+      setServiceBanner(true);
+    }
+
+    showToast(apiError.message, "error");
+    return true;
+  }
+
+  function handleNetworkFailure(context: string) {
+    showToast(networkErrorMessage(context), "error");
+  }
 
   const fetchActions = useCallback(async () => {
     try {
       const res = await fetch("/api/actions");
-      if (handleApiError(res, "Failed to load actions", showToast, router, setGitHubBanner)) {
+      if (await handleError(res, "Failed to load actions")) {
         setError("Failed to load actions"); return;
       }
       const data: Action[] = await res.json();
       setActions(data);
       setError("");
     } catch {
-      handleNetworkError("Failed to load actions", showToast);
+      handleNetworkFailure("Failed to load actions");
       setError("Failed to load actions");
     } finally { setLoading(false); }
   }, [showToast, router]);
@@ -56,19 +65,26 @@ export default function DashboardPage() {
   useEffect(() => { fetchActions(); }, [fetchActions]);
 
   async function handleToggle(id: string) {
+    setTogglingIds((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/actions/${id}/toggle`, { method: "POST" });
-      if (handleApiError(res, "Failed to toggle action", showToast, router, setGitHubBanner)) return;
+      if (await handleError(res, "Failed to toggle action")) return;
+      const action = actions.find((a) => a.id === id);
+      const wasActive = action?.status === "active";
+      showToast(wasActive ? "Action paused" : "Action resumed");
       await fetchActions();
-    } catch { handleNetworkError("Failed to toggle action", showToast); }
+    } catch { handleNetworkFailure("Failed to toggle action"); }
+    finally { setTogglingIds((prev) => { const next = new Set(prev); next.delete(id); return next; }); }
   }
 
   async function handleTrigger(id: string) {
+    setTriggeringIds((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/actions/${id}/trigger`, { method: "POST" });
-      if (handleApiError(res, "Failed to trigger action", showToast, router, setGitHubBanner)) return;
+      if (await handleError(res, "Failed to trigger action")) return;
       showToast("Action triggered successfully");
-    } catch { handleNetworkError("Failed to trigger action", showToast); }
+    } catch { handleNetworkFailure("Failed to trigger action"); }
+    finally { setTriggeringIds((prev) => { const next = new Set(prev); next.delete(id); return next; }); }
   }
 
   async function handleDeleteConfirm() {
@@ -76,19 +92,25 @@ export default function DashboardPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/actions/${deleteTarget}`, { method: "DELETE" });
-      if (handleApiError(res, "Failed to delete action", showToast, router, setGitHubBanner)) { setDeleting(false); return; }
+      if (await handleError(res, "Failed to delete action")) { setDeleting(false); return; }
       setDeleteTarget(null);
       showToast("Action deleted successfully");
       await fetchActions();
     } catch {
-      handleNetworkError("Failed to delete action", showToast);
+      handleNetworkFailure("Failed to delete action");
     } finally { setDeleting(false); }
   }
 
   async function handleLogout() {
     setLoggingOut(true);
-    try { await fetch("/api/auth/logout", { method: "POST" }); router.push("/login"); }
-    catch { showToast("Failed to log out", "error"); setLoggingOut(false); }
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } catch {
+      showToast("Failed to log out", "error");
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   const activeCount = actions.filter((a) => a.status === "active").length;
@@ -132,18 +154,18 @@ export default function DashboardPage() {
 
       {/* Main content */}
       <main className="mx-auto max-w-7xl px-6 py-8">
-        {/* GitHub connection banner */}
-        {gitHubBanner && (
-          <div role="alert" data-testid="github-banner"
+        {/* Service connection banner */}
+        {serviceBanner && (
+          <div role="alert" data-testid="service-banner"
             className="mb-6 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 px-5 py-3.5 text-sm text-amber-700 backdrop-blur-xl">
             <div className="flex items-center gap-2.5">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-500">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
-              <span>GitHub connection issue — the repository may be inaccessible or the token may be invalid.</span>
+              <span>Service connection issue — the service may be inaccessible or the token may be invalid.</span>
             </div>
-            <button onClick={() => setGitHubBanner(false)} className="ml-4 shrink-0 rounded-lg p-1 text-amber-500 transition-all hover:bg-amber-100" aria-label="Dismiss GitHub connection banner">
+            <button onClick={() => setServiceBanner(false)} className="ml-4 shrink-0 rounded-lg p-1 text-amber-500 transition-all hover:bg-amber-100" aria-label="Dismiss service connection banner">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
           </div>
@@ -225,7 +247,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {actions.map((action) => (
               <ActionCard key={action.id} action={action}
-                onToggle={handleToggle} onTrigger={handleTrigger} onDelete={(id) => setDeleteTarget(id)} />
+                onToggle={handleToggle} onTrigger={handleTrigger} onDelete={(id) => setDeleteTarget(id)}
+                toggling={togglingIds.has(action.id)} triggering={triggeringIds.has(action.id)} />
             ))}
           </div>
         )}

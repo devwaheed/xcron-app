@@ -7,6 +7,7 @@ import type { Schedule } from "@/types";
 import GlassCard from "@/components/GlassCard";
 import ScriptEditor from "@/components/ScriptEditor";
 import SchedulePicker, { getLocalTimezone } from "@/components/SchedulePicker";
+import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 interface FormErrors {
   name?: string;
@@ -59,15 +60,15 @@ export default function NewActionPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "Request failed" }));
-        setErrors({ api: data.error || "Failed to create action" });
-        setSubmitting(false);
+        const apiError = await parseApiResponse(res, "Failed to create action");
+        setErrors({ api: apiError.message });
         return;
       }
 
       router.push("/dashboard");
     } catch {
-      setErrors({ api: "Network error. Please try again." });
+      setErrors({ api: networkErrorMessage("Failed to create action") });
+    } finally {
       setSubmitting(false);
     }
   }

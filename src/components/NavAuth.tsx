@@ -11,7 +11,7 @@ export default function NavAuth() {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    fetch("/api/actions", { credentials: "include" })
+    fetch("/api/auth/refresh", { method: "POST", credentials: "include" })
       .then((res) => {
         setLoggedIn(res.ok);
         setChecked(true);

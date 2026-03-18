@@ -17,27 +17,41 @@ const LOGIN_URL = "https://paypeople.app/#/login";
     console.log("Navigating to login…");
     await page.goto(LOGIN_URL, { waitUntil: "networkidle2" });
 
-    // 2. Fill credentials
+    // 2. Fill credentials (Angular app — use actual DOM ids)
     console.log("Filling credentials…");
-    await page.waitForSelector('input[type="email"], input[name="email"], input[placeholder*="mail"]', { visible: true });
-    const emailInput = await page.$('input[type="email"]') || await page.$('input[name="email"]') || await page.$('input[placeholder*="mail"]');
-    await emailInput.click({ clickCount: 3 });
-    await emailInput.type(EMAIL, { delay: 30 });
+    await page.waitForSelector("#makefocus", { visible: true });
+    await new Promise((r) => setTimeout(r, 1000));
 
-    const passwordInput = await page.$('input[type="password"]') || await page.$('input[name="password"]');
-    await passwordInput.click({ clickCount: 3 });
-    await passwordInput.type(PASSWORD, { delay: 30 });
+    // Clear and fill email
+    await page.focus("#makefocus");
+    await page.evaluate(() => { document.querySelector("#makefocus").value = ""; });
+    await page.type("#makefocus", EMAIL, { delay: 50 });
 
-    // 3. Press login
+    // Clear and fill password
+    await page.focus("#makefocus2");
+    await page.evaluate(() => { document.querySelector("#makefocus2").value = ""; });
+    await page.type("#makefocus2", PASSWORD, { delay: 50 });
+
+    // Verify fields were filled
+    const filled = await page.evaluate(() => {
+      const e = document.querySelector("#makefocus");
+      const p = document.querySelector("#makefocus2");
+      return { email: e?.value || "EMPTY", pass: p?.value || "EMPTY" };
+    });
+    console.log("Fields filled:", JSON.stringify(filled));
+
+    // 3. Submit login
     console.log("Logging in…");
-    const loginBtn = await page.waitForSelector('button[type="submit"]', { visible: true });
-    await loginBtn.click();
+    await page.click("button[type='submit'].btn_login");
 
-    // 4. Wait for dashboard
+    // 4. Wait for dashboard (SPA hash change)
     console.log("Waiting for dashboard…");
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30000 }).catch(() => {});
-    await page.waitForFunction(() => !window.location.hash.includes("login"), { timeout: 15000 });
-    await new Promise((r) => setTimeout(r, 3000));
+    await page.waitForFunction(
+      () => !window.location.hash.includes("login"),
+      { timeout: 60000, polling: 500 }
+    );
+    console.log("Dashboard loaded, hash:", await page.evaluate(() => window.location.hash));
+    await new Promise((r) => setTimeout(r, 5000));
 
     // 5. Find and click CLOCK OUT
     console.log("Looking for CLOCK OUT button…");

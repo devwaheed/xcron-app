@@ -45,7 +45,7 @@ function getHeaders(): Record<string, string> {
 
 export interface CronJobBridge {
   createJob(actionId: string, actionName: string, schedule: Schedule, enabled: boolean): Promise<number>;
-  updateJob(cronJobId: number, actionName: string, schedule: Schedule): Promise<void>;
+  updateJob(cronJobId: number, actionId: string, actionName: string, schedule: Schedule): Promise<void>;
   deleteJob(cronJobId: number): Promise<void>;
   enableJob(cronJobId: number): Promise<void>;
   disableJob(cronJobId: number): Promise<void>;
@@ -99,9 +99,11 @@ export function createCronJobBridge(): CronJobBridge {
       return data.jobId as number;
     },
 
-    async updateJob(cronJobId, actionName, schedule) {
+    async updateJob(cronJobId, actionId, actionName, schedule) {
+      const triggerUrl = `${baseUrl}/api/actions/${actionId}/trigger`;
       const body = {
         job: {
+          url: triggerUrl,
           title: actionName,
           schedule: toCronJobSchedule(schedule),
         },

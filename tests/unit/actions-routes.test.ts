@@ -40,6 +40,23 @@ vi.mock('@/lib/github-bridge', () => ({
   }),
 }));
 
+// Mock cron job bridge
+const mockCreateJob = vi.fn().mockResolvedValue(99999);
+const mockUpdateJob = vi.fn().mockResolvedValue(undefined);
+const mockDeleteJob = vi.fn().mockResolvedValue(undefined);
+const mockEnableJob = vi.fn().mockResolvedValue(undefined);
+const mockDisableJob = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('@/lib/cronjob-bridge', () => ({
+  createCronJobBridge: () => ({
+    createJob: mockCreateJob,
+    updateJob: mockUpdateJob,
+    deleteJob: mockDeleteJob,
+    enableJob: mockEnableJob,
+    disableJob: mockDisableJob,
+  }),
+}));
+
 // Mock workflow generator
 vi.mock('@/lib/workflow-generator', () => ({
   generate: () => 'name: mock-workflow\n',
@@ -725,7 +742,7 @@ describe('POST /api/actions/[id]/trigger', () => {
   }
 
   it('triggers a workflow and returns success', async () => {
-    mockFetchExisting({ id: 'abc-123' });
+    mockFetchExisting({ id: 'abc-123', status: 'active' });
 
     const { POST } = await import('@/app/api/actions/[id]/trigger/route');
     const request = new Request('http://localhost/api/actions/abc-123/trigger', { method: 'POST' });
@@ -737,6 +754,21 @@ describe('POST /api/actions/[id]/trigger', () => {
     expect(response.status).toBe(200);
     expect(body.message).toBe('Workflow triggered successfully');
     expect(mockTriggerWorkflow).toHaveBeenCalledWith('abc-123');
+  });
+
+  it('returns 409 when action is paused', async () => {
+    mockFetchExisting({ id: 'abc-123', status: 'paused' });
+
+    const { POST } = await import('@/app/api/actions/[id]/trigger/route');
+    const request = new Request('http://localhost/api/actions/abc-123/trigger', { method: 'POST' });
+    const response = await POST(request as any, {
+      params: Promise.resolve({ id: 'abc-123' }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toBe('Action is paused');
+    expect(mockTriggerWorkflow).not.toHaveBeenCalled();
   });
 
   it('returns 404 when action not found', async () => {
@@ -755,7 +787,7 @@ describe('POST /api/actions/[id]/trigger', () => {
   });
 
   it('returns 502 when GitHub trigger fails', async () => {
-    mockFetchExisting({ id: 'abc-123' });
+    mockFetchExisting({ id: 'abc-123', status: 'active' });
     mockTriggerWorkflow.mockRejectedValue(new Error('GitHub dispatch error'));
 
     const { POST } = await import('@/app/api/actions/[id]/trigger/route');

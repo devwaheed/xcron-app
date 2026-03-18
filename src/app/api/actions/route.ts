@@ -118,8 +118,11 @@ export async function POST(request: NextRequest) {
       cronJobId = await cronBridge.createJob(actionId, name.trim(), schedule, true);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error('cron-job.org create failed (non-fatal):', message);
-      // Non-fatal: action still works via GitHub cron as fallback
+      console.error('cron-job.org create failed:', message);
+      return NextResponse.json(
+        { error: 'Cron job creation failed', details: message },
+        { status: 502 }
+      );
     }
 
     // Insert into Supabase

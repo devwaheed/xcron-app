@@ -28,11 +28,11 @@ export async function POST(
 
     const { id } = await params;
 
-    // Confirm the action exists
+    // Confirm the action exists and check its status
     const supabase = getSupabaseServerClient();
     const { data: existing, error: fetchError } = await supabase
       .from('actions')
-      .select('id')
+      .select('id, status')
       .eq('id', id)
       .single();
 
@@ -40,6 +40,15 @@ export async function POST(
       return NextResponse.json(
         { error: 'Action not found' },
         { status: 404 }
+      );
+    }
+
+    // Reject triggers for paused actions (defense-in-depth: cron-job.org
+    // should already be disabled, but guard against race conditions)
+    if (existing.status === 'paused') {
+      return NextResponse.json(
+        { error: 'Action is paused', details: 'Resume the action before triggering it.' },
+        { status: 409 }
       );
     }
 

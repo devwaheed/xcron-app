@@ -15,6 +15,9 @@ const fullEnv = {
   GITHUB_REPO_OWNER: 'owner',
   GITHUB_REPO_NAME: 'repo',
   GITHUB_PAT: 'ghp_token',
+  CRONJOB_API_KEY: 'test-cronjob-api-key',
+  CRON_SECRET: 'test-cron-secret',
+  NEXT_PUBLIC_APP_URL: 'https://example.com',
 };
 
 describe('getSupabaseServerClient', () => {

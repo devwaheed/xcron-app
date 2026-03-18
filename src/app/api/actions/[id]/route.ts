@@ -53,7 +53,11 @@ export async function DELETE(
         await cronBridge.deleteJob(existing.cron_job_id);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        console.error('cron-job.org delete failed (non-fatal):', message);
+        console.error('cron-job.org delete failed:', message);
+        return NextResponse.json(
+          { error: 'Cron job deletion failed', details: message },
+          { status: 502 }
+        );
       }
     }
 
@@ -210,14 +214,18 @@ export async function PUT(
     try {
       const cronBridge = createCronJobBridge();
       if (cronJobId) {
-        await cronBridge.updateJob(cronJobId, name.trim(), schedule);
+        await cronBridge.updateJob(cronJobId, id, name.trim(), schedule);
       } else {
         // No existing cron job — create one (backfill for actions created before this feature)
         cronJobId = await cronBridge.createJob(id, name.trim(), schedule, existing.status === 'active');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error('cron-job.org update failed (non-fatal):', message);
+      console.error('cron-job.org update failed:', message);
+      return NextResponse.json(
+        { error: 'Cron job update failed', details: message },
+        { status: 502 }
+      );
     }
 
     // Update Supabase

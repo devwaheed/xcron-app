@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,10 +42,13 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || "Authentication failed"); return; }
+      if (!res.ok) {
+        const apiError = await parseApiResponse(res, "Authentication failed");
+        setError(apiError.message);
+        return;
+      }
       router.push("/dashboard");
-    } catch { setError("An unexpected error occurred. Please try again."); }
+    } catch { setError(networkErrorMessage("Login")); }
     finally { setLoading(false); }
   }
 

@@ -48,6 +48,23 @@ vi.mock('@/lib/workflow-generator', () => ({
   generate: () => 'name: mock-workflow\n',
 }));
 
+// Mock cron job bridge
+const mockCreateJob = vi.fn().mockResolvedValue(99999);
+const mockUpdateJob = vi.fn().mockResolvedValue(undefined);
+const mockDeleteJob = vi.fn().mockResolvedValue(undefined);
+const mockEnableJob = vi.fn().mockResolvedValue(undefined);
+const mockDisableJob = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('@/lib/cronjob-bridge', () => ({
+  createCronJobBridge: () => ({
+    createJob: mockCreateJob,
+    updateJob: mockUpdateJob,
+    deleteJob: mockDeleteJob,
+    enableJob: mockEnableJob,
+    disableJob: mockDisableJob,
+  }),
+}));
+
 vi.stubGlobal('crypto', {
   ...globalThis.crypto,
   randomUUID: () => 'test-uuid-prop',

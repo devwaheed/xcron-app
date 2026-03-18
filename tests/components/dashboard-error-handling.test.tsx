@@ -48,7 +48,7 @@ describe("Dashboard error handling", () => {
     );
   }
 
-  it("shows GitHub connection banner when fetch returns 502", async () => {
+  it("shows service connection banner when fetch returns 502", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: "GitHub connection failed" }), {
         status: 502,
@@ -58,15 +58,15 @@ describe("Dashboard error handling", () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByTestId("github-banner")).toBeInTheDocument();
+      expect(screen.getByTestId("service-banner")).toBeInTheDocument();
     });
 
     // Banner contains the warning text
-    const banner = screen.getByTestId("github-banner");
-    expect(banner.textContent).toMatch(/GitHub connection issue/);
+    const banner = screen.getByTestId("service-banner");
+    expect(banner.textContent).toMatch(/Service connection issue/);
   });
 
-  it("dismisses GitHub banner when close button is clicked", async () => {
+  it("dismisses service banner when close button is clicked", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: "GitHub connection failed" }), {
         status: 502,
@@ -76,14 +76,14 @@ describe("Dashboard error handling", () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByTestId("github-banner")).toBeInTheDocument();
+      expect(screen.getByTestId("service-banner")).toBeInTheDocument();
     });
 
     fireEvent.click(
-      screen.getByLabelText("Dismiss GitHub connection banner")
+      screen.getByLabelText("Dismiss service connection banner")
     );
 
-    expect(screen.queryByTestId("github-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("service-banner")).not.toBeInTheDocument();
   });
 
   it("redirects to login on 401 response", async () => {
@@ -110,7 +110,7 @@ describe("Dashboard error handling", () => {
     });
   });
 
-  it("shows generic error toast on 500 response", async () => {
+  it("shows error toast on 500 response", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: "Server error" }), { status: 500 })
     );
@@ -118,7 +118,7 @@ describe("Dashboard error handling", () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
+      expect(screen.getByText(/Server error/)).toBeInTheDocument();
     });
   });
 
@@ -134,7 +134,7 @@ describe("Dashboard error handling", () => {
     });
   });
 
-  it("does not show GitHub banner for non-502 errors", async () => {
+  it("does not show service banner for non-502 errors", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: "Server error" }), { status: 500 })
     );
@@ -142,9 +142,9 @@ describe("Dashboard error handling", () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
+      expect(screen.getByText(/Server error/)).toBeInTheDocument();
     });
 
-    expect(screen.queryByTestId("github-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("service-banner")).not.toBeInTheDocument();
   });
 });
