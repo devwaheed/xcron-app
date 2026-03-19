@@ -38,7 +38,6 @@ describe('PricingPage', () => {
   it('displays correct prices', async () => {
     render(<PricingPage />);
 
-    // Prices are hardcoded in the component, available immediately
     expect(screen.getAllByText('$49').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$99').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$199').length).toBeGreaterThan(0);
@@ -47,9 +46,9 @@ describe('PricingPage', () => {
   it('displays correct action limits', async () => {
     render(<PricingPage />);
 
-    expect(screen.getAllByText('5 actions').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('15 actions').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('50 actions').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('5 scheduled actions').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('15 scheduled actions').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('50 scheduled actions').length).toBeGreaterThan(0);
   });
 
   it('shows "Most Popular" badge on Pro tier', () => {
@@ -104,8 +103,7 @@ describe('PricingPage', () => {
     render(<PricingPage />);
 
     expect(screen.getByText('Feature')).toBeTruthy();
-    // "Actions" appears in both cards and table
-    expect(screen.getAllByText('Actions').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Scheduled actions').length).toBeGreaterThan(0);
     expect(screen.getByText('Runs per month')).toBeTruthy();
     expect(screen.getByText('Log retention')).toBeTruthy();
   });

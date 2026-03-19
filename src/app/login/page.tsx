@@ -6,22 +6,31 @@ import Link from "next/link";
 import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 import { Logo } from "@/components/Logo";
 
+const PLANS = [
+  { id: 1, name: "Starter", priceCents: 4900, maxActions: 5, maxRunsPerMonth: 100 },
+  { id: 2, name: "Pro", priceCents: 9900, maxActions: 15, maxRunsPerMonth: 500 },
+  { id: 3, name: "Business", priceCents: 19900, maxActions: 50, maxRunsPerMonth: 2000 },
+];
+
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [showReset, setShowReset] = useState(false);
+
+  // Signup fields
+  const [selectedPlan, setSelectedPlan] = useState(1);
+  const [promoCode, setPromoCode] = useState("");
+
+  // Reset fields
   const [resetEmail, setResetEmail] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
-    // Try refreshing the session — if it succeeds the user is logged in.
-    // We use the refresh endpoint because /api/actions uses the service
-    // role key and doesn't actually verify the user's auth cookie.
     fetch("/api/auth/refresh", { method: "POST", credentials: "include" })
       .then((res) => {
         if (res.ok) {
@@ -50,6 +59,32 @@ export default function LoginPage() {
       }
       router.push("/dashboard");
     } catch { setError(networkErrorMessage("Login")); }
+    finally { setLoading(false); }
+  }
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          signup: true,
+          plan_id: selectedPlan,
+          promo_code: promoCode.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const apiError = await parseApiResponse(res, "Signup failed");
+        setError(apiError.message);
+        return;
+      }
+      router.push("/dashboard");
+    } catch { setError(networkErrorMessage("Signup")); }
     finally { setLoading(false); }
   }
 
@@ -84,7 +119,7 @@ export default function LoginPage() {
         <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-100/40 blur-[80px]" />
       </div>
 
-      <div className="w-full max-w-md">
+      <div className={`w-full ${mode === "signup" ? "max-w-lg" : "max-w-md"}`}>
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-80">
             <Logo showWordmark />
@@ -92,7 +127,7 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-8 shadow-xl shadow-slate-200/30 backdrop-blur-xl">
-          {!showReset ? (
+          {mode === "login" && (
             <>
               <h1 className="mb-6 text-center text-xl font-semibold text-slate-900">Sign in to your account</h1>
               <form onSubmit={handleLogin} className="space-y-5">
@@ -114,12 +149,72 @@ export default function LoginPage() {
                   {loading ? "Signing in…" : "Sign in"}
                 </button>
               </form>
-              <div className="mt-5 text-center">
-                <button type="button" onClick={() => { setShowReset(true); setResetEmail(email); setResetMessage(""); }}
-                  className="text-sm text-violet-600 transition-colors hover:text-violet-500">Forgot Password?</button>
+              <div className="mt-5 flex items-center justify-between text-sm">
+                <button type="button" onClick={() => { setMode("reset"); setResetEmail(email); setResetMessage(""); setError(""); }}
+                  className="text-violet-600 transition-colors hover:text-violet-500">Forgot Password?</button>
+                <button type="button" onClick={() => { setMode("signup"); setError(""); }}
+                  className="text-violet-600 transition-colors hover:text-violet-500">Create account</button>
               </div>
             </>
-          ) : (
+          )}
+
+          {mode === "signup" && (
+            <>
+              <h1 className="mb-6 text-center text-xl font-semibold text-slate-900">Create your account</h1>
+              <form onSubmit={handleSignup} className="space-y-5">
+                <div>
+                  <label htmlFor="signup-email" className="mb-1.5 block text-sm font-medium text-slate-600">Email</label>
+                  <input id="signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+                </div>
+                <div>
+                  <label htmlFor="signup-password" className="mb-1.5 block text-sm font-medium text-slate-600">Password</label>
+                  <input id="signup-password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+                </div>
+
+                {/* Plan Selection */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-600">Choose a plan</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PLANS.map((plan) => (
+                      <button key={plan.id} type="button" onClick={() => setSelectedPlan(plan.id)}
+                        className={`rounded-xl border p-3 text-left transition-all ${
+                          selectedPlan === plan.id
+                            ? "border-violet-400 bg-violet-50 ring-2 ring-violet-200"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}>
+                        <div className="text-sm font-semibold text-slate-900">{plan.name}</div>
+                        <div className="text-lg font-bold text-slate-900">${(plan.priceCents / 100).toFixed(0)}</div>
+                        <div className="mt-1 text-[11px] text-slate-500">{plan.maxActions} actions · {plan.maxRunsPerMonth} runs</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Promo Code */}
+                <div>
+                  <label htmlFor="promo-code" className="mb-1.5 block text-sm font-medium text-slate-600">Promo Code <span className="text-slate-400">(optional)</span></label>
+                  <input id="promo-code" type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Enter promo code"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+                </div>
+
+                {error && (
+                  <div role="alert" className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-600">{error}</div>
+                )}
+                <button type="submit" disabled={loading}
+                  className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
+                  {loading ? "Creating account…" : "Create account"}
+                </button>
+              </form>
+              <div className="mt-5 text-center">
+                <button type="button" onClick={() => { setMode("login"); setError(""); }}
+                  className="text-sm text-violet-600 transition-colors hover:text-violet-500">Already have an account? Sign in</button>
+              </div>
+            </>
+          )}
+
+          {mode === "reset" && (
             <>
               <h1 className="mb-2 text-center text-xl font-semibold text-slate-900">Reset Password</h1>
               <p className="mb-6 text-center text-sm text-slate-400">Enter your email and we&apos;ll send you a reset link.</p>
@@ -138,7 +233,7 @@ export default function LoginPage() {
                 </button>
               </form>
               <div className="mt-5 text-center">
-                <button type="button" onClick={() => { setShowReset(false); setError(""); }}
+                <button type="button" onClick={() => { setMode("login"); setError(""); }}
                   className="text-sm text-violet-600 transition-colors hover:text-violet-500">← Back to Sign in</button>
               </div>
             </>

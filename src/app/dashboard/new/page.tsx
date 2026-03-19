@@ -48,17 +48,10 @@ export default function NewActionPage() {
     async function loadProfileTimezone() {
       try {
         const res = await fetch("/api/profile");
-        if (!res.ok) {
-          setSchedule((prev) => ({ ...prev, timezone: "UTC" }));
-          return;
-        }
+        if (!res.ok) { setSchedule((prev) => ({ ...prev, timezone: "UTC" })); return; }
         const profile = await res.json();
-        if (profile.timezone) {
-          setSchedule((prev) => ({ ...prev, timezone: profile.timezone }));
-        }
-      } catch {
-        setSchedule((prev) => ({ ...prev, timezone: "UTC" }));
-      }
+        if (profile.timezone) setSchedule((prev) => ({ ...prev, timezone: profile.timezone }));
+      } catch { setSchedule((prev) => ({ ...prev, timezone: "UTC" })); }
     }
     async function loadUsage() {
       try {
@@ -66,13 +59,9 @@ export default function NewActionPage() {
         if (res.ok) {
           const data = await res.json();
           setActionSlots(data.actions);
-          if (data.actions.used >= data.actions.limit) {
-            setAtLimit(true);
-          }
+          if (data.actions.used >= data.actions.limit) setAtLimit(true);
         }
-      } catch {
-        // Non-critical, allow form to work
-      }
+      } catch { /* non-critical */ }
     }
     loadProfileTimezone();
     loadUsage();
@@ -81,61 +70,46 @@ export default function NewActionPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const validationErrors = validateForm(name, script, schedule);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+    if (Object.keys(validationErrors).length > 0) { setErrors(validationErrors); return; }
     setErrors({});
     setSubmitting(true);
-
     try {
       const res = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), scriptContent: script, schedule }),
       });
-
       if (!res.ok) {
         const apiError = await parseApiResponse(res, "Failed to create action");
         setErrors({ api: apiError.message });
         return;
       }
-
       router.push("/dashboard");
-    } catch {
-      setErrors({ api: networkErrorMessage("Failed to create action") });
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { setErrors({ api: networkErrorMessage("Failed to create action") }); }
+    finally { setSubmitting(false); }
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-violet-100/60 blur-[100px]" />
-        <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-indigo-100/50 blur-[100px]" />
-      </div>
-
-      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
+    <div className="px-6 py-8 lg:px-10">
+      <div className="mx-auto max-w-3xl">
+        {/* Page header */}
+        <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-900">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
             </Link>
-            <h1 className="text-lg font-semibold text-slate-900">Create New Action</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Create New Action</h1>
           </div>
           <button type="button" onClick={() => router.push("/dashboard")}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">
             Cancel
           </button>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-8">
         {atLimit ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-center backdrop-blur-xl">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-center">
             <p className="text-sm font-medium text-amber-700">
               You have reached your action limit. Upgrade your plan or delete an existing action.
             </p>
@@ -152,35 +126,24 @@ export default function NewActionPage() {
           )}
 
           {errors.api && (
-            <div role="alert" className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-600">
-              {errors.api}
-            </div>
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-600">{errors.api}</div>
           )}
 
-          {/* Section 1: Basics */}
           <GlassCard>
             <div className="mb-5 flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white">1</div>
               <h2 className="text-base font-semibold text-slate-900">Basics</h2>
             </div>
             <div>
-              <label htmlFor="action-name" className="mb-1.5 block text-sm font-semibold text-slate-700">
-                Action Name
-              </label>
-              <input
-                id="action-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+              <label htmlFor="action-name" className="mb-1.5 block text-sm font-semibold text-slate-700">Action Name</label>
+              <input id="action-name" type="text" value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Daily Report, Cleanup Script"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
-              />
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
               <p className="mt-1.5 text-xs text-slate-500">A short, descriptive name for your scheduled action</p>
               {errors.name && <p className="mt-1.5 text-sm text-red-500">{errors.name}</p>}
             </div>
           </GlassCard>
 
-          {/* Section 2: Script */}
           <GlassCard>
             <div className="mb-5 flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white">2</div>
@@ -193,7 +156,6 @@ export default function NewActionPage() {
             </div>
           </GlassCard>
 
-          {/* Section 3: Schedule */}
           <GlassCard>
             <div className="mb-5 flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white">3</div>
@@ -204,19 +166,15 @@ export default function NewActionPage() {
             {errors.time && <p className="mt-1.5 text-sm text-red-500">{errors.time}</p>}
           </GlassCard>
 
-          {/* Submit */}
           <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110 disabled:opacity-50"
-            >
+            <button type="submit" disabled={submitting}
+              className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110 disabled:opacity-50">
               {submitting ? "Creating…" : "Create Action"}
             </button>
           </div>
         </form>
         )}
-      </main>
+      </div>
     </div>
   );
 }

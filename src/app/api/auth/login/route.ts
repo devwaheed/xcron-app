@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { assignPlan } from '@/lib/usage-tracker';
 
 /**
  * POST /api/auth/login
- * Authenticates the admin via Supabase Auth and sets a session cookie.
+ * Handles both sign-in and sign-up.
+ * For signup: validates promo code (if provided) before creating the account.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, password, signup, plan_id, promo_code } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -18,6 +20,74 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseServerClient();
+
+    // --- SIGNUP FLOW ---
+    if (signup) {
+      const planId = plan_id ?? 1;
+
+      // Validate promo code BEFORE creating the account
+      let promoRecord: { id: number; plan_id: number } | null = null;
+      if (promo_code) {
+        const { data: code, error: codeErr } = await supabase
+          .from('promo_codes')
+          .select('id, plan_id, redeemed_by')
+          .eq('code', promo_code.trim())
+          .single();
+
+        if (codeErr || !code) {
+          return NextResponse.json({ error: 'Invalid promo code' }, { status: 400 });
+        }
+        if (code.redeemed_by) {
+          return NextResponse.json({ error: 'Promo code already redeemed' }, { status: 400 });
+        }
+        promoRecord = { id: code.id, plan_id: code.plan_id };
+      }
+
+      // Create the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError || !signUpData.session) {
+        return NextResponse.json(
+          { error: signUpError?.message || 'Signup failed' },
+          { status: 400 }
+        );
+      }
+
+      const userId = signUpData.user?.id;
+      if (userId) {
+        // Assign the selected plan (or promo plan if code provided)
+        const targetPlanId = promoRecord ? promoRecord.plan_id : planId;
+        try {
+          await assignPlan(supabase, userId, targetPlanId);
+        } catch {
+          // user_plans row may not exist yet if the DB trigger hasn't fired;
+          // in that case insert it directly
+          await supabase.from('user_plans').upsert({
+            user_id: userId,
+            plan_id: targetPlanId,
+            billing_cycle_start: new Date().toISOString(),
+          });
+        }
+
+        // Mark promo code as redeemed
+        if (promoRecord) {
+          await supabase
+            .from('promo_codes')
+            .update({ redeemed_by: userId, redeemed_at: new Date().toISOString() })
+            .eq('id', promoRecord.id)
+            .is('redeemed_by', null);
+        }
+      }
+
+      const response = NextResponse.json({ success: true });
+      setSessionCookies(response, signUpData.session);
+      return response;
+    }
+
+    // --- LOGIN FLOW ---
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -31,32 +101,35 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json({ success: true });
-
-    // Store access token — short-lived but we'll refresh it
-    response.cookies.set('sb-access-token', data.session.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: data.session.expires_in,
-    });
-
-    // Store refresh token — long-lived, used to get new access tokens
-    if (data.session.refresh_token) {
-      response.cookies.set('sb-refresh-token', data.session.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
-    }
-
+    setSessionCookies(response, data.session);
     return response;
   } catch {
     return NextResponse.json(
       { error: 'Authentication failed' },
       { status: 401 }
     );
+  }
+}
+
+function setSessionCookies(
+  response: NextResponse,
+  session: { access_token: string; expires_in: number; refresh_token?: string }
+) {
+  response.cookies.set('sb-access-token', session.access_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: session.expires_in,
+  });
+
+  if (session.refresh_token) {
+    response.cookies.set('sb-refresh-token', session.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
   }
 }

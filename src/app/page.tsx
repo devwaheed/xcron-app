@@ -11,6 +11,46 @@ import {
   ShieldIcon,
 } from "@/components/icons";
 
+const PLANS = [
+  {
+    id: 1,
+    name: "Starter",
+    description: "Perfect for side projects and trying things out.",
+    price: "$49",
+    features: [
+      "5 scheduled actions",
+      "100 runs per month",
+      "30-day log retention",
+      "Community support",
+    ],
+  },
+  {
+    id: 2,
+    name: "Pro",
+    description: "For developers who automate every day.",
+    price: "$99",
+    popular: true,
+    features: [
+      "15 scheduled actions",
+      "500 runs per month",
+      "90-day log retention",
+      "Priority support",
+    ],
+  },
+  {
+    id: 3,
+    name: "Business",
+    description: "For teams running production workloads at scale.",
+    price: "$199",
+    features: [
+      "50 scheduled actions",
+      "2,000 runs per month",
+      "1-year log retention",
+      "Dedicated support",
+    ],
+  },
+];
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 overflow-hidden">
@@ -24,6 +64,7 @@ export default function LandingPage() {
           <div className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Features</a>
             <a href="#how-it-works" className="text-sm text-slate-500 transition-colors hover:text-slate-900">How it works</a>
+            <a href="#pricing" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Pricing</a>
             <a href="#stats" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Why xCron</a>
           </div>
 
@@ -261,6 +302,98 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="relative px-6 py-24 lg:py-32">
+        {/* Subtle ambient glow */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-1/3 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-indigo-100/50 blur-[120px]" />
+        </div>
+
+        <div className="mx-auto max-w-5xl">
+          <ScrollReveal>
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                Simple pricing, no surprises
+              </h2>
+              <p className="mt-4 text-lg text-slate-500">
+                One-time payment. Pick a plan, start automating, own it forever.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <div className="mt-14 grid items-start gap-8 lg:grid-cols-3">
+            {PLANS.map((plan, i) => (
+              <ScrollReveal key={plan.id} delay={i * 100} className="h-full">
+                {plan.popular ? (
+                  /* ── Highlighted Pro card with gradient glow ── */
+                  <div className="relative flex h-full flex-col lg:-mt-4 lg:mb-0">
+                    {/* Gradient glow behind card */}
+                    <div className="absolute -inset-[2px] rounded-[18px] bg-gradient-to-br from-violet-500 via-indigo-500 to-sky-500 opacity-75 blur-lg" />
+                    {/* Gradient ring */}
+                    <div className="absolute -inset-[2px] rounded-[18px] bg-gradient-to-br from-violet-500 via-indigo-500 to-sky-500" />
+                    <div className="relative flex h-full flex-col rounded-2xl bg-white p-8">
+                      <div className="mb-6 inline-flex self-start rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1 text-xs font-semibold text-white">
+                        Most Popular
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
+                      <p className="mt-1 text-sm text-slate-500">{plan.description}</p>
+                      <p className="mt-6 flex items-baseline">
+                        <span className="text-5xl font-extrabold tracking-tight text-slate-900">{plan.price}</span>
+                        <span className="ml-2 text-sm text-slate-500">one-time</span>
+                      </p>
+                      <ul className="mt-8 flex-1 divide-y divide-slate-100">
+                        {plan.features.map((f) => (
+                          <li key={f} className="flex items-center gap-3 py-3 first:pt-0">
+                            <svg className="h-5 w-5 shrink-0 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm text-slate-600">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Link href="/login"
+                        className="mt-8 flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/25 hover:brightness-110">
+                        Get started
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Standard card ── */
+                  <div className="relative flex h-full flex-col rounded-2xl bg-white p-8 ring-1 ring-slate-200 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:ring-slate-300">
+                    <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
+                    <p className="mt-1 text-sm text-slate-500">{plan.description}</p>
+                    <p className="mt-6 flex items-baseline">
+                      <span className="text-5xl font-extrabold tracking-tight text-slate-900">{plan.price}</span>
+                      <span className="ml-2 text-sm text-slate-500">one-time</span>
+                    </p>
+                    <ul className="mt-8 flex-1 divide-y divide-slate-100">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-center gap-3 py-3 first:pt-0">
+                          <svg className="h-5 w-5 shrink-0 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm text-slate-600">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link href="/login"
+                      className="mt-8 flex w-full items-center justify-center rounded-lg bg-white px-4 py-3 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300">
+                      Get started
+                    </Link>
+                  </div>
+                )}
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <ScrollReveal delay={350}>
+            <p className="mt-10 text-center text-sm text-slate-400">
+              All plans include encrypted execution, GitHub-backed infrastructure, and automatic retries. Have a promo code? Enter it during signup.
+            </p>
+          </ScrollReveal>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="px-6 py-24 lg:py-32">
         <ScrollReveal>
@@ -299,6 +432,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <a href="#features" className="transition-colors hover:text-slate-600">Features</a>
               <a href="#how-it-works" className="transition-colors hover:text-slate-600">How it works</a>
+              <a href="#pricing" className="transition-colors hover:text-slate-600">Pricing</a>
               <Link href="/login" className="transition-colors hover:text-slate-600">Sign in</Link>
             </div>
             <div className="text-sm text-slate-300">

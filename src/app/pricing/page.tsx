@@ -4,23 +4,48 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 
-interface PlanDisplay {
-  id: number;
-  name: string;
-  priceCents: number;
-  maxActions: number;
-  maxRunsPerMonth: number;
-  logRetentionDays: number;
-}
-
-const PLANS: PlanDisplay[] = [
-  { id: 1, name: "Starter", priceCents: 4900, maxActions: 5, maxRunsPerMonth: 100, logRetentionDays: 30 },
-  { id: 2, name: "Pro", priceCents: 9900, maxActions: 15, maxRunsPerMonth: 500, logRetentionDays: 90 },
-  { id: 3, name: "Business", priceCents: 19900, maxActions: 50, maxRunsPerMonth: 2000, logRetentionDays: 365 },
+const PLANS = [
+  {
+    id: 1,
+    name: "Starter",
+    description: "Perfect for side projects and trying things out.",
+    price: "$49",
+    features: [
+      "5 scheduled actions",
+      "100 runs per month",
+      "30-day log retention",
+      "Community support",
+    ],
+  },
+  {
+    id: 2,
+    name: "Pro",
+    description: "For developers who automate every day.",
+    price: "$99",
+    popular: true,
+    features: [
+      "15 scheduled actions",
+      "500 runs per month",
+      "90-day log retention",
+      "Priority support",
+    ],
+  },
+  {
+    id: 3,
+    name: "Business",
+    description: "For teams running production workloads at scale.",
+    price: "$199",
+    features: [
+      "50 scheduled actions",
+      "2,000 runs per month",
+      "1-year log retention",
+      "Dedicated support",
+    ],
+  },
 ];
 
 export default function PricingPage() {
-  const [currentPlanId, setCurrentPlanId] = useState<number | null>(null);
+  const [currentPlanName, setCurrentPlanName] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState<number | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(true);
@@ -32,9 +57,7 @@ export default function PricingPage() {
         if (res.ok) {
           const data = await res.json();
           setIsAuthenticated(true);
-          // Determine current plan from plan name
-          const match = PLANS.find((p) => p.name === data.planName);
-          if (match) setCurrentPlanId(match.id);
+          setCurrentPlanName(data.planName);
         }
       } catch {
         // Not authenticated
@@ -70,20 +93,11 @@ export default function PricingPage() {
     }
   }
 
-  function formatPrice(cents: number) {
-    return `$${(cents / 100).toFixed(0)}`;
-  }
-
-  function formatRetention(days: number) {
-    if (days >= 365) return "1 year";
-    return `${days} days`;
-  }
-
   return (
-    <div className="min-h-screen bg-white text-slate-900 overflow-hidden">
+    <div className="min-h-screen bg-white text-slate-900">
+      {/* Subtle ambient glow */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-violet-100/60 blur-[100px]" />
-        <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-indigo-100/50 blur-[100px]" />
+        <div className="absolute top-1/3 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-indigo-100/50 blur-[120px]" />
       </div>
 
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-xl">
@@ -94,12 +108,12 @@ export default function PricingPage() {
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
               <Link href="/dashboard"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50">
                 Dashboard
               </Link>
             ) : (
               <Link href="/login"
-                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:brightness-110">
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
                 Sign In
               </Link>
             )}
@@ -108,54 +122,96 @@ export default function PricingPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-16">
-        <div className="mb-12 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">Simple, transparent pricing</h1>
-          <p className="mt-3 text-lg text-slate-500">Choose the plan that fits your automation needs.</p>
+        <div className="mb-14 text-center">
+          <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
+            Simple pricing, no surprises
+          </h1>
+          <p className="mt-4 text-lg text-slate-500">
+            One-time payment. Pick a plan, start automating, own it forever.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="grid items-start gap-8 lg:grid-cols-3">
           {PLANS.map((plan) => {
-            const isCurrent = currentPlanId === plan.id;
-            const isPopular = plan.id === 2;
-            return (
-              <div key={plan.id}
-                className={`relative rounded-2xl border p-6 shadow-sm transition-all ${
-                  isPopular ? "border-violet-300 bg-violet-50/30 shadow-violet-100" : "border-slate-200 bg-white"
-                } ${isCurrent ? "ring-2 ring-violet-500" : ""}`}>
-                {isPopular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-violet-600 px-3 py-0.5 text-xs font-medium text-white">
+            const isCurrent = currentPlanName === plan.name;
+
+            return plan.popular ? (
+              /* ── Highlighted Pro card with gradient glow ── */
+              <div key={plan.id} className="relative flex flex-col lg:-mt-4">
+                {/* Gradient glow behind card */}
+                <div className="absolute -inset-[2px] rounded-[18px] bg-gradient-to-br from-violet-500 via-indigo-500 to-sky-500 opacity-75 blur-lg" />
+                {/* Gradient ring */}
+                <div className="absolute -inset-[2px] rounded-[18px] bg-gradient-to-br from-violet-500 via-indigo-500 to-sky-500" />
+                <div className="relative flex flex-1 flex-col rounded-2xl bg-white p-8">
+                  <div className="mb-6 inline-flex self-start rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1 text-xs font-semibold text-white">
                     Most Popular
-                  </span>
-                )}
-                <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
-                <div className="mt-2">
-                  <span className="text-3xl font-bold text-slate-900">{formatPrice(plan.priceCents)}</span>
-                  <span className="text-sm text-slate-500"> one-time</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
+                  <p className="mt-1 text-sm text-slate-500">{plan.description}</p>
+                  <p className="mt-6 flex items-baseline">
+                    <span className="text-5xl font-extrabold tracking-tight text-slate-900">{plan.price}</span>
+                    <span className="ml-2 text-sm text-slate-500">one-time</span>
+                  </p>
+                  <ul className="mt-8 flex-1 divide-y divide-slate-100">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-center gap-3 py-3 first:pt-0">
+                        <svg className="h-5 w-5 shrink-0 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm text-slate-600">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-8">
+                    {isCurrent ? (
+                      <span className="flex w-full items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-600">
+                        Current Plan
+                      </span>
+                    ) : stripeEnabled ? (
+                      <button onClick={() => handleBuy(plan.id)} disabled={loading === plan.id}
+                        className="flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/25 hover:brightness-110 disabled:opacity-50">
+                        {loading === plan.id ? "Redirecting…" : "Get started"}
+                      </button>
+                    ) : (
+                      <span className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400">
+                        Use promo code in profile
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <ul className="mt-6 space-y-3 text-sm text-slate-600">
-                  <li className="flex items-center gap-2">
-                    <CheckIcon /> {plan.maxActions} actions
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckIcon /> {plan.maxRunsPerMonth.toLocaleString()} runs/month
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckIcon /> {formatRetention(plan.logRetentionDays)} log retention
-                  </li>
+              </div>
+            ) : (
+              /* ── Standard card ── */
+              <div key={plan.id} className="relative flex flex-col rounded-2xl bg-white p-8 ring-1 ring-slate-200 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:ring-slate-300">
+                <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
+                <p className="mt-1 text-sm text-slate-500">{plan.description}</p>
+                <p className="mt-6 flex items-baseline">
+                  <span className="text-5xl font-extrabold tracking-tight text-slate-900">{plan.price}</span>
+                  <span className="ml-2 text-sm text-slate-500">one-time</span>
+                </p>
+                <ul className="mt-8 flex-1 divide-y divide-slate-100">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-center gap-3 py-3 first:pt-0">
+                      <svg className="h-5 w-5 shrink-0 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm text-slate-600">{f}</span>
+                    </li>
+                  ))}
                 </ul>
-                <div className="mt-6">
+                <div className="mt-8">
                   {isCurrent ? (
-                    <span className="block w-full rounded-xl border border-violet-200 bg-violet-50 py-2.5 text-center text-sm font-medium text-violet-600">
+                    <span className="flex w-full items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-600">
                       Current Plan
                     </span>
                   ) : stripeEnabled ? (
                     <button onClick={() => handleBuy(plan.id)} disabled={loading === plan.id}
-                      className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50">
-                      {loading === plan.id ? "Redirecting…" : "Get Started"}
+                      className="flex w-full items-center justify-center rounded-lg bg-white px-4 py-3 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:ring-slate-300 disabled:opacity-50">
+                      {loading === plan.id ? "Redirecting…" : "Get started"}
                     </button>
                   ) : (
-                    <span className="block w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-center text-sm text-slate-400">
-                      Use promo code
+                    <span className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400">
+                      Use promo code in profile
                     </span>
                   )}
                 </div>
@@ -164,46 +220,42 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* Features comparison */}
-        <div className="mt-16 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="py-3 text-left font-medium text-slate-500">Feature</th>
-                {PLANS.map((p) => (
-                  <th key={p.id} className="py-3 text-center font-medium text-slate-900">{p.name}</th>
+        <p className="mt-10 text-center text-sm text-slate-400">
+          All plans include encrypted execution, GitHub-backed infrastructure, and automatic retries. Have a promo code? Redeem it in your profile after signup.
+        </p>
+
+        {/* Comparison table */}
+        <div className="mt-20">
+          <h2 className="mb-8 text-center text-xl font-semibold text-slate-900">Compare plans</h2>
+          <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="px-6 py-4 text-left font-medium text-slate-500">Feature</th>
+                  {PLANS.map((p) => (
+                    <th key={p.id} className="px-6 py-4 text-center font-semibold text-slate-900">{p.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {[
+                  { label: "Scheduled actions", values: ["5", "15", "50"] },
+                  { label: "Runs per month", values: ["100", "500", "2,000"] },
+                  { label: "Log retention", values: ["30 days", "90 days", "1 year"] },
+                  { label: "Price", values: ["$49", "$99", "$199"] },
+                ].map((row) => (
+                  <tr key={row.label}>
+                    <td className="px-6 py-3.5 text-slate-600">{row.label}</td>
+                    {row.values.map((v, idx) => (
+                      <td key={idx} className="px-6 py-3.5 text-center font-medium text-slate-900">{v}</td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              <tr>
-                <td className="py-3 text-slate-600">Actions</td>
-                {PLANS.map((p) => <td key={p.id} className="py-3 text-center text-slate-900">{p.maxActions}</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 text-slate-600">Runs per month</td>
-                {PLANS.map((p) => <td key={p.id} className="py-3 text-center text-slate-900">{p.maxRunsPerMonth.toLocaleString()}</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 text-slate-600">Log retention</td>
-                {PLANS.map((p) => <td key={p.id} className="py-3 text-center text-slate-900">{formatRetention(p.logRetentionDays)}</td>)}
-              </tr>
-              <tr>
-                <td className="py-3 text-slate-600">Price</td>
-                {PLANS.map((p) => <td key={p.id} className="py-3 text-center font-medium text-slate-900">{formatPrice(p.priceCents)}</td>)}
-              </tr>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
     </div>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500 shrink-0">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
   );
 }

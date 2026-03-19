@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import DashboardShell from "@/components/DashboardShell";
 
 /**
  * Server-side auth guard for all /dashboard routes.
@@ -28,7 +29,6 @@ export default async function DashboardLayout({
     )?.value;
   const refreshToken = cookieStore.get("sb-refresh-token")?.value;
 
-  // No tokens at all — definitely not logged in
   if (!accessToken && !refreshToken) {
     redirect("/login");
   }
@@ -45,7 +45,6 @@ export default async function DashboardLayout({
     },
   });
 
-  // Try the current access token first
   if (accessToken) {
     const {
       data: { user },
@@ -53,23 +52,19 @@ export default async function DashboardLayout({
     } = await supabase.auth.getUser();
 
     if (!error && user) {
-      return <>{children}</>;
+      return <DashboardShell>{children}</DashboardShell>;
     }
   }
 
-  // Access token missing or expired — try refreshing
   if (refreshToken) {
     const { data, error } = await supabase.auth.refreshSession({
       refresh_token: refreshToken,
     });
 
     if (!error && data.session && data.user) {
-      // Refresh succeeded — the proxy will set the new cookies on the
-      // response, but we can proceed rendering since we have a valid user.
-      return <>{children}</>;
+      return <DashboardShell>{children}</DashboardShell>;
     }
   }
 
-  // Both tokens failed
   redirect("/login");
 }
