@@ -17,6 +17,7 @@ const baseAction: Action = {
   status: "active",
   createdAt: "2024-01-01T00:00:00Z",
   updatedAt: "2024-01-01T00:00:00Z",
+  userId: "test-user-id-1234",
 };
 
 const pausedAction: Action = {

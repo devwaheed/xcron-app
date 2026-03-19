@@ -8,10 +8,25 @@ import type { Action, Schedule } from '@/types';
 
 const mockFrom = vi.fn();
 
+const TEST_USER_ID = 'test-user-id-1234';
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(async () => ({
+    get: (name: string) => {
+      if (name === 'sb-access-token') return { value: 'mock-token' };
+      return undefined;
+    },
+  })),
+}));
+
 vi.mock('@/lib/supabase-server', () => ({
   getSupabaseServerClient: () => ({
     from: mockFrom,
   }),
+  getAuthenticatedClient: vi.fn(async () => ({
+    supabase: { from: mockFrom },
+    userId: TEST_USER_ID,
+  })),
 }));
 
 const mockTriggerWorkflow = vi.fn();
@@ -57,6 +72,7 @@ const arbitraryAction: fc.Arbitrary<Action> = fc.record({
   updatedAt: fc
     .integer({ min: 946684800000, max: 1893456000000 })
     .map((ms) => new Date(ms).toISOString()),
+  userId: fc.constant(TEST_USER_ID),
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -76,6 +92,7 @@ function actionToRow(action: Action): Record<string, unknown> {
     cron_job_id: action.cronJobId ?? null,
     created_at: action.createdAt,
     updated_at: action.updatedAt,
+    user_id: action.userId,
   };
 }
 
@@ -110,9 +127,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
           vi.clearAllMocks();
           mockTriggerWorkflow.mockResolvedValue(undefined);
 
-          // Set up Supabase to return the action (confirming it exists and is active)
-          const row = actionToRow(action);
-          setupSupabaseFetch({ id: action.id, status: 'active' });
+          setupSupabaseFetch({ id: action.id, status: 'active', user_id: TEST_USER_ID });
 
           const request = new Request(
             `http://localhost/api/actions/${action.id}/trigger`,
@@ -128,7 +143,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
 
           // triggerWorkflow must have been called exactly once with the action's ID
           expect(mockTriggerWorkflow).toHaveBeenCalledTimes(1);
-          expect(mockTriggerWorkflow).toHaveBeenCalledWith(action.id);
+          expect(mockTriggerWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
         },
       ),
       { numRuns: 100 },
@@ -145,7 +160,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
           vi.clearAllMocks();
           mockTriggerWorkflow.mockResolvedValue(undefined);
 
-          setupSupabaseFetch({ id: action.id, status: 'paused' });
+          setupSupabaseFetch({ id: action.id, status: 'paused', user_id: TEST_USER_ID });
 
           const request = new Request(
             `http://localhost/api/actions/${action.id}/trigger`,

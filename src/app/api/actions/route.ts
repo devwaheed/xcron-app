@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { mapRowToAction } from '@/lib/mapRowToAction';
 import { validateSchedule } from '@/lib/schedule-validator';
 import { generate } from '@/lib/workflow-generator';
@@ -13,7 +14,9 @@ import type { Action, Schedule } from '@/types';
  */
 export async function GET() {
   try {
-    const supabase = getSupabaseServerClient();
+    const cookieStore = await cookies();
+    const { supabase } = await getAuthenticatedClient(cookieStore);
+
     const { data, error } = await supabase
       .from('actions')
       .select('*')
@@ -30,8 +33,8 @@ export async function GET() {
     return NextResponse.json(actions);
   } catch {
     return NextResponse.json(
-      { error: 'Database error' },
-      { status: 500 }
+      { error: 'Authentication required' },
+      { status: 401 }
     );
   }
 }
@@ -41,6 +44,21 @@ export async function GET() {
  * Creates a new action: validates input, commits to GitHub first, then inserts into Supabase.
  */
 export async function POST(request: NextRequest) {
+  let userId: string;
+  let supabase;
+
+  try {
+    const cookieStore = await cookies();
+    const auth = await getAuthenticatedClient(cookieStore);
+    supabase = auth.supabase;
+    userId = auth.userId;
+  } catch {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { name, scriptContent, schedule } = body as {
@@ -93,16 +111,17 @@ export async function POST(request: NextRequest) {
       status: 'active',
       createdAt: now,
       updatedAt: now,
+      userId,
     };
 
     // Generate workflow YAML
-    const workflowYaml = generate(action);
+    const workflowYaml = generate(action, userId);
 
     // GitHub-first: commit script and workflow before touching Supabase
     const bridge = createGitHubBridge();
     try {
-      await bridge.commitScript(actionId, scriptContent);
-      await bridge.commitWorkflow(actionId, workflowYaml);
+      await bridge.commitScript(userId, actionId, scriptContent);
+      await bridge.commitWorkflow(userId, actionId, workflowYaml);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
@@ -115,7 +134,7 @@ export async function POST(request: NextRequest) {
     let cronJobId: number | undefined;
     try {
       const cronBridge = createCronJobBridge();
-      cronJobId = await cronBridge.createJob(actionId, name.trim(), schedule, true);
+      cronJobId = await cronBridge.createJob(actionId, name.trim(), schedule, true, userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('cron-job.org create failed:', message);
@@ -125,8 +144,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert into Supabase
-    const supabase = getSupabaseServerClient();
     const { data, error } = await supabase
       .from('actions')
       .insert({
@@ -140,6 +157,7 @@ export async function POST(request: NextRequest) {
         timezone: schedule.timezone,
         status: 'active',
         cron_job_id: cronJobId ?? null,
+        user_id: userId,
       })
       .select('*')
       .single();

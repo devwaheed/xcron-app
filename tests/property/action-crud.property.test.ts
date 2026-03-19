@@ -20,10 +20,25 @@ const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 const mockFrom = vi.fn();
 
+const TEST_USER_ID = 'test-user-id-1234';
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(async () => ({
+    get: (name: string) => {
+      if (name === 'sb-access-token') return { value: 'mock-token' };
+      return undefined;
+    },
+  })),
+}));
+
 vi.mock('@/lib/supabase-server', () => ({
   getSupabaseServerClient: () => ({
     from: mockFrom,
   }),
+  getAuthenticatedClient: vi.fn(async () => ({
+    supabase: { from: mockFrom },
+    userId: TEST_USER_ID,
+  })),
 }));
 
 const mockCommitScript = vi.fn();
@@ -105,6 +120,7 @@ const arbitraryAction: fc.Arbitrary<Action> = fc.record({
   updatedAt: fc
     .integer({ min: 946684800000, max: 1893456000000 })
     .map((ms) => new Date(ms).toISOString()),
+  userId: fc.constant(TEST_USER_ID),
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -172,6 +188,7 @@ function actionToRow(action: Action): Record<string, unknown> {
     cron_job_id: action.cronJobId ?? null,
     created_at: action.createdAt,
     updated_at: action.updatedAt,
+    user_id: action.userId,
   };
 }
 
@@ -181,25 +198,25 @@ function actionToRow(action: Action): Record<string, unknown> {
  * Validates: Requirements 11.2, 11.3
  *
  * For any action, the GitHub Bridge should commit the script file to
- * `scripts/{actionId}.js` and the workflow file to
- * `.github/workflows/{actionId}.yml`.
+ * `scripts/{userId}/{actionId}.js` and the workflow file to
+ * `.github/workflows/{userId}_{actionId}.yml`.
  */
 describe('Property 16: Correct file paths in repository', () => {
-  it('getScriptPath constructs scripts/{actionId}.js for any action', () => {
+  it('getScriptPath constructs scripts/{userId}/{actionId}.js for any action', () => {
     fc.assert(
       fc.property(arbitraryAction, (action) => {
-        const scriptPath = getScriptPath(action.id);
-        expect(scriptPath).toBe(`scripts/${action.id}.js`);
+        const scriptPath = getScriptPath(action.userId, action.id);
+        expect(scriptPath).toBe(`scripts/${action.userId}/${action.id}.js`);
       }),
       { numRuns: 100 },
     );
   });
 
-  it('getWorkflowPath constructs .github/workflows/{actionId}.yml for any action', () => {
+  it('getWorkflowPath constructs .github/workflows/{userId}_{actionId}.yml for any action', () => {
     fc.assert(
       fc.property(arbitraryAction, (action) => {
-        const workflowPath = getWorkflowPath(action.id);
-        expect(workflowPath).toBe(`.github/workflows/${action.id}.yml`);
+        const workflowPath = getWorkflowPath(action.userId, action.id);
+        expect(workflowPath).toBe(`.github/workflows/${action.userId}_${action.id}.yml`);
       }),
       { numRuns: 100 },
     );
@@ -333,8 +350,8 @@ describe('Property 3: Action creation persists to both stores', () => {
 
         expect(response.status).toBe(201);
         // GitHub was called
-        expect(mockCommitScript).toHaveBeenCalledWith('test-uuid-prop', action.scriptContent);
-        expect(mockCommitWorkflow).toHaveBeenCalledWith('test-uuid-prop', 'name: mock-workflow\n');
+        expect(mockCommitScript).toHaveBeenCalledWith(TEST_USER_ID, 'test-uuid-prop', action.scriptContent);
+        expect(mockCommitWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'test-uuid-prop', 'name: mock-workflow\n');
         // Supabase was called
         expect(mockFrom).toHaveBeenCalled();
       }),
@@ -386,8 +403,8 @@ describe('Property 7: Action update persists to both stores', () => {
 
         expect(response.status).toBe(200);
         // GitHub was called
-        expect(mockCommitScript).toHaveBeenCalledWith(action.id, action.scriptContent);
-        expect(mockCommitWorkflow).toHaveBeenCalledWith(action.id, 'name: mock-workflow\n');
+        expect(mockCommitScript).toHaveBeenCalledWith(TEST_USER_ID, action.id, action.scriptContent);
+        expect(mockCommitWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id, 'name: mock-workflow\n');
         // Supabase was called twice: once for fetch, once for update
         expect(mockFrom).toHaveBeenCalledTimes(2);
       }),
@@ -433,8 +450,8 @@ describe('Property 8: Action deletion removes from both stores', () => {
 
         expect(response.status).toBe(200);
         // GitHub was called to delete both files
-        expect(mockDeleteScript).toHaveBeenCalledWith(action.id);
-        expect(mockDeleteWorkflow).toHaveBeenCalledWith(action.id);
+        expect(mockDeleteScript).toHaveBeenCalledWith(TEST_USER_ID, action.id);
+        expect(mockDeleteWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
         // Supabase was called twice: once for fetch, once for delete
         expect(mockFrom).toHaveBeenCalledTimes(2);
       }),

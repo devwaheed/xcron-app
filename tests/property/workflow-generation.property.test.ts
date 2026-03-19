@@ -14,8 +14,10 @@ import type { Action, Schedule } from '@/types';
  * (a) a workflow_dispatch trigger (scheduling is handled by cron-job.org)
  * (b) a Node.js setup step (actions/setup-node)
  * (c) a dependency installation step including Puppeteer
- * (d) a script execution step referencing scripts/{actionId}.js
+ * (d) a script execution step referencing scripts/{userId}/{actionId}.js
  */
+
+const TEST_USER_ID = 'test-user-id-1234';
 
 const IANA_TIMEZONES = [
   'UTC',
@@ -50,13 +52,14 @@ const arbitraryAction: fc.Arbitrary<Action> = fc.record({
   updatedAt: fc
     .integer({ min: 946684800000, max: 1893456000000 })
     .map((ms) => new Date(ms).toISOString()),
+  userId: fc.constant(TEST_USER_ID),
 });
 
 describe('Property 14: Generated workflow structure completeness', () => {
   it('generate(action) produces valid YAML with all required sections', () => {
     fc.assert(
       fc.property(arbitraryAction, (action) => {
-        const yamlStr = generate(action);
+        const yamlStr = generate(action, TEST_USER_ID);
 
         // (f) The YAML is parseable
         const parsed = YAML.parse(yamlStr);
@@ -90,10 +93,10 @@ describe('Property 14: Generated workflow structure completeness', () => {
         );
         expect(installStep).toBeDefined();
 
-        // (d) script execution step referencing scripts/{actionId}.js
+        // (d) script execution step referencing scripts/{userId}/{actionId}.js
         const scriptStep = steps.find(
           (s: Record<string, unknown>) =>
-            typeof s.run === 'string' && s.run.includes(`scripts/${action.id}.js`),
+            typeof s.run === 'string' && s.run.includes(`scripts/${TEST_USER_ID}/${action.id}.js`),
         );
         expect(scriptStep).toBeDefined();
       }),

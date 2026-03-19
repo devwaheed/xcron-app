@@ -126,8 +126,11 @@ describe('Property 4: Form validation rejects incomplete submissions', () => {
           expect(hasError).toBeTruthy();
         });
 
-        // fetch should NOT have been called (form was not submitted to API)
-        expect(fetchSpy).not.toHaveBeenCalled();
+        // fetch should NOT have been called for form submission (profile fetch is expected)
+        const actionCalls = fetchSpy.mock.calls.filter(
+          (call) => call[0] !== '/api/profile'
+        );
+        expect(actionCalls).toHaveLength(0);
 
         // Router push should NOT have been called (no navigation to dashboard)
         expect(pushMock).not.toHaveBeenCalledWith('/dashboard');

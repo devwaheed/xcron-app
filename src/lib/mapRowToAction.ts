@@ -17,6 +17,7 @@ export interface ActionRow {
   cron_job_id: number | null;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 /**
@@ -39,5 +40,6 @@ export function mapRowToAction(row: ActionRow): Action {
     cronJobId: row.cron_job_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    userId: row.user_id,
   };
 }

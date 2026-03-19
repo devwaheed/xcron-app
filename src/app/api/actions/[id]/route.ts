@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { mapRowToAction } from '@/lib/mapRowToAction';
 import { validateSchedule } from '@/lib/schedule-validator';
 import { generate } from '@/lib/workflow-generator';
@@ -15,11 +16,25 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let userId: string;
+  let supabase;
+
+  try {
+    const cookieStore = await cookies();
+    const auth = await getAuthenticatedClient(cookieStore);
+    supabase = auth.supabase;
+    userId = auth.userId;
+  } catch {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
   try {
     const { id } = await params;
 
-    // Fetch existing action to confirm it exists
-    const supabase = getSupabaseServerClient();
+    // Fetch existing action to confirm it exists (RLS ensures user can only see their own)
     const { data: existing, error: fetchError } = await supabase
       .from('actions')
       .select('*')
@@ -36,8 +51,8 @@ export async function DELETE(
     // GitHub-first: delete script and workflow before touching Supabase
     const bridge = createGitHubBridge();
     try {
-      await bridge.deleteScript(id);
-      await bridge.deleteWorkflow(id);
+      await bridge.deleteScript(userId, id);
+      await bridge.deleteWorkflow(userId, id);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
@@ -61,7 +76,7 @@ export async function DELETE(
       }
     }
 
-    // Delete from Supabase
+    // Delete from Supabase (RLS ensures user can only delete their own)
     const { error: deleteError } = await supabase
       .from('actions')
       .delete()
@@ -92,9 +107,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const cookieStore = await cookies();
+    const { supabase } = await getAuthenticatedClient(cookieStore);
+
     const { id } = await params;
 
-    const supabase = getSupabaseServerClient();
     const { data, error } = await supabase
       .from('actions')
       .select('*')
@@ -111,8 +128,8 @@ export async function GET(
     return NextResponse.json(mapRowToAction(data));
   } catch {
     return NextResponse.json(
-      { error: 'Database error' },
-      { status: 500 }
+      { error: 'Authentication required' },
+      { status: 401 }
     );
   }
 }
@@ -125,6 +142,21 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let userId: string;
+  let supabase;
+
+  try {
+    const cookieStore = await cookies();
+    const auth = await getAuthenticatedClient(cookieStore);
+    supabase = auth.supabase;
+    userId = auth.userId;
+  } catch {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -165,8 +197,7 @@ export async function PUT(
       );
     }
 
-    // Fetch existing action to confirm it exists
-    const supabase = getSupabaseServerClient();
+    // Fetch existing action to confirm it exists (RLS ensures user can only see their own)
     const { data: existing, error: fetchError } = await supabase
       .from('actions')
       .select('*')
@@ -191,16 +222,17 @@ export async function PUT(
       githubWorkflowId: existing.github_workflow_id ?? undefined,
       createdAt: existing.created_at,
       updatedAt: now,
+      userId,
     };
 
     // Generate updated workflow YAML
-    const workflowYaml = generate(updatedAction);
+    const workflowYaml = generate(updatedAction, userId);
 
     // GitHub-first: commit updated script and workflow before touching Supabase
     const bridge = createGitHubBridge();
     try {
-      await bridge.commitScript(id, scriptContent);
-      await bridge.commitWorkflow(id, workflowYaml);
+      await bridge.commitScript(userId, id, scriptContent);
+      await bridge.commitWorkflow(userId, id, workflowYaml);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
@@ -217,7 +249,7 @@ export async function PUT(
         await cronBridge.updateJob(cronJobId, id, name.trim(), schedule);
       } else {
         // No existing cron job — create one (backfill for actions created before this feature)
-        cronJobId = await cronBridge.createJob(id, name.trim(), schedule, existing.status === 'active');
+        cronJobId = await cronBridge.createJob(id, name.trim(), schedule, existing.status === 'active', userId);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -228,7 +260,7 @@ export async function PUT(
       );
     }
 
-    // Update Supabase
+    // Update Supabase (RLS ensures user can only update their own)
     const { data, error } = await supabase
       .from('actions')
       .update({

@@ -19,46 +19,49 @@ function makeAction(overrides: Partial<Action> = {}): Action {
     status: 'active',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
+    userId: 'test-user-id-1234',
     ...overrides,
   };
 }
 
+const TEST_USER_ID = 'test-user-id-1234';
+
 describe('WorkflowGenerator.generate', () => {
   it('produces valid YAML', () => {
     const action = makeAction();
-    const yamlStr = generate(action);
+    const yamlStr = generate(action, TEST_USER_ID);
     const parsed = YAML.parse(yamlStr);
     expect(parsed).toBeDefined();
   });
 
   it('sets the workflow name to the action name', () => {
     const action = makeAction({ name: 'Daily Scraper' });
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     expect(parsed.name).toBe('Daily Scraper');
   });
 
   it('does not include a schedule trigger (cron-job.org handles scheduling)', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     expect(parsed.on.schedule).toBeUndefined();
   });
 
   it('includes a workflow_dispatch trigger', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     expect(parsed.on.workflow_dispatch).toBeDefined();
   });
 
   it('includes actions/checkout step', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     const steps = parsed.jobs.run.steps;
     expect(steps[0].uses).toBe('actions/checkout@v4');
   });
 
   it('includes Node.js setup step with version 20', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     const steps = parsed.jobs.run.steps;
     const nodeStep = steps.find((s: Record<string, unknown>) => typeof s.uses === 'string' && s.uses.startsWith('actions/setup-node'));
     expect(nodeStep).toBeDefined();
@@ -67,7 +70,7 @@ describe('WorkflowGenerator.generate', () => {
 
   it('includes dependency install step with Puppeteer', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     const steps = parsed.jobs.run.steps;
     const installStep = steps.find((s: Record<string, unknown>) => s.name === 'Install dependencies');
     expect(installStep).toBeDefined();
@@ -76,16 +79,16 @@ describe('WorkflowGenerator.generate', () => {
 
   it('includes script execution step referencing the correct path', () => {
     const action = makeAction({ id: 'abc-def-456' });
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     const steps = parsed.jobs.run.steps;
     const runStep = steps.find((s: Record<string, unknown>) => s.name === 'Run script');
     expect(runStep).toBeDefined();
-    expect(runStep.run).toBe('node scripts/abc-def-456.js');
+    expect(runStep.run).toBe(`node scripts/${TEST_USER_ID}/abc-def-456.js`);
   });
 
   it('runs on ubuntu-latest', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     expect(parsed.jobs.run['runs-on']).toBe('ubuntu-latest');
   });
 
@@ -99,14 +102,14 @@ describe('WorkflowGenerator.generate', () => {
         timezone: 'UTC',
       },
     });
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     expect(parsed.on.schedule).toBeUndefined();
     expect(parsed.on.workflow_dispatch).toBeDefined();
   });
 
   it('step ordering is checkout → setup-node → install deps → run script', () => {
     const action = makeAction();
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     const steps = parsed.jobs.run.steps;
 
     expect(steps).toHaveLength(4);
@@ -126,7 +129,7 @@ describe('WorkflowGenerator.generate', () => {
         timezone: 'UTC',
       },
     });
-    const parsed = YAML.parse(generate(action));
+    const parsed = YAML.parse(generate(action, TEST_USER_ID));
     expect(parsed.on.schedule).toBeUndefined();
   });
 });

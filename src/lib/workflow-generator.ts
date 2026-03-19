@@ -8,7 +8,7 @@ import type { Action } from '@/types';
  * /api/actions/[id]/trigger endpoint → workflow_dispatch.
  * No cron schedule in the workflow to avoid double runs.
  */
-export function generate(action: Action): string {
+export function generate(action: Action, userId: string): string {
   const workflow = {
     name: action.name,
     on: {
@@ -29,7 +29,7 @@ export function generate(action: Action): string {
           },
           {
             name: 'Run script',
-            run: `node scripts/${action.id}.js`,
+            run: `node scripts/${userId}/${action.id}.js`,
           },
         ],
       },

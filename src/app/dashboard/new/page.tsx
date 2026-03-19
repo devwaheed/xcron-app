@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Schedule } from "@/types";
@@ -41,6 +41,25 @@ export default function NewActionPage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function loadProfileTimezone() {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) {
+          setSchedule((prev) => ({ ...prev, timezone: "UTC" }));
+          return;
+        }
+        const profile = await res.json();
+        if (profile.timezone) {
+          setSchedule((prev) => ({ ...prev, timezone: profile.timezone }));
+        }
+      } catch {
+        setSchedule((prev) => ({ ...prev, timezone: "UTC" }));
+      }
+    }
+    loadProfileTimezone();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -2,22 +2,22 @@ import { getEnvConfig } from '@/lib/env';
 import type { RunEntry } from '@/types';
 
 export interface GitHubBridge {
-  commitScript(actionId: string, scriptContent: string): Promise<void>;
-  commitWorkflow(actionId: string, workflowYaml: string): Promise<void>;
-  deleteScript(actionId: string): Promise<void>;
-  deleteWorkflow(actionId: string): Promise<void>;
-  enableWorkflow(actionId: string): Promise<void>;
-  disableWorkflow(actionId: string): Promise<void>;
-  triggerWorkflow(actionId: string): Promise<void>;
-  getWorkflowRuns(actionId: string, page: number, status?: string): Promise<RunEntry[]>;
+  commitScript(userId: string, actionId: string, scriptContent: string): Promise<void>;
+  commitWorkflow(userId: string, actionId: string, workflowYaml: string): Promise<void>;
+  deleteScript(userId: string, actionId: string): Promise<void>;
+  deleteWorkflow(userId: string, actionId: string): Promise<void>;
+  enableWorkflow(userId: string, actionId: string): Promise<void>;
+  disableWorkflow(userId: string, actionId: string): Promise<void>;
+  triggerWorkflow(userId: string, actionId: string): Promise<void>;
+  getWorkflowRuns(userId: string, actionId: string, page: number, status?: string): Promise<RunEntry[]>;
 }
 
-function getScriptPath(actionId: string): string {
-  return `scripts/${actionId}.js`;
+function getScriptPath(userId: string, actionId: string): string {
+  return `scripts/${userId}/${actionId}.js`;
 }
 
-function getWorkflowPath(actionId: string): string {
-  return `.github/workflows/${actionId}.yml`;
+function getWorkflowPath(userId: string, actionId: string): string {
+  return `.github/workflows/${userId}_${actionId}.yml`;
 }
 
 function githubHeaders(pat: string): Record<string, string> {
@@ -102,28 +102,28 @@ export function createGitHubBridge(): GitHubBridge {
   const { GITHUB_REPO_OWNER: owner, GITHUB_REPO_NAME: repo, GITHUB_PAT: pat } = env;
 
   return {
-    async commitScript(actionId: string, scriptContent: string): Promise<void> {
-      const path = getScriptPath(actionId);
+    async commitScript(userId: string, actionId: string, scriptContent: string): Promise<void> {
+      const path = getScriptPath(userId, actionId);
       await commitFile(owner, repo, path, scriptContent, `Update script for action ${actionId}`, pat);
     },
 
-    async commitWorkflow(actionId: string, workflowYaml: string): Promise<void> {
-      const path = getWorkflowPath(actionId);
+    async commitWorkflow(userId: string, actionId: string, workflowYaml: string): Promise<void> {
+      const path = getWorkflowPath(userId, actionId);
       await commitFile(owner, repo, path, workflowYaml, `Update workflow for action ${actionId}`, pat);
     },
 
-    async deleteScript(actionId: string): Promise<void> {
-      const path = getScriptPath(actionId);
+    async deleteScript(userId: string, actionId: string): Promise<void> {
+      const path = getScriptPath(userId, actionId);
       await deleteFile(owner, repo, path, `Delete script for action ${actionId}`, pat);
     },
 
-    async deleteWorkflow(actionId: string): Promise<void> {
-      const path = getWorkflowPath(actionId);
+    async deleteWorkflow(userId: string, actionId: string): Promise<void> {
+      const path = getWorkflowPath(userId, actionId);
       await deleteFile(owner, repo, path, `Delete workflow for action ${actionId}`, pat);
     },
 
-    async enableWorkflow(actionId: string): Promise<void> {
-      const workflowFileName = `${actionId}.yml`;
+    async enableWorkflow(userId: string, actionId: string): Promise<void> {
+      const workflowFileName = `${userId}_${actionId}.yml`;
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/enable`;
       const res = await fetch(url, {
         method: 'PUT',
@@ -135,8 +135,8 @@ export function createGitHubBridge(): GitHubBridge {
       }
     },
 
-    async disableWorkflow(actionId: string): Promise<void> {
-      const workflowFileName = `${actionId}.yml`;
+    async disableWorkflow(userId: string, actionId: string): Promise<void> {
+      const workflowFileName = `${userId}_${actionId}.yml`;
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/disable`;
       const res = await fetch(url, {
         method: 'PUT',
@@ -148,8 +148,8 @@ export function createGitHubBridge(): GitHubBridge {
       }
     },
 
-    async triggerWorkflow(actionId: string): Promise<void> {
-      const workflowFileName = `${actionId}.yml`;
+    async triggerWorkflow(userId: string, actionId: string): Promise<void> {
+      const workflowFileName = `${userId}_${actionId}.yml`;
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`;
       const res = await fetch(url, {
         method: 'POST',
@@ -162,8 +162,8 @@ export function createGitHubBridge(): GitHubBridge {
       }
     },
 
-    async getWorkflowRuns(actionId: string, page: number, status?: string): Promise<RunEntry[]> {
-      const workflowFileName = `${actionId}.yml`;
+    async getWorkflowRuns(userId: string, actionId: string, page: number, status?: string): Promise<RunEntry[]> {
+      const workflowFileName = `${userId}_${actionId}.yml`;
       const params = new URLSearchParams({
         page: String(page),
         per_page: '100',

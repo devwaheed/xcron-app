@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { createGitHubBridge } from '@/lib/github-bridge';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { mapRowToAction } from '@/lib/mapRowToAction';
@@ -14,10 +15,25 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let userId: string;
+  let supabase;
+
+  try {
+    const cookieStore = await cookies();
+    const auth = await getAuthenticatedClient(cookieStore);
+    supabase = auth.supabase;
+    userId = auth.userId;
+  } catch {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
   try {
     const { id } = await params;
 
-    const supabase = getSupabaseServerClient();
+    // Fetch existing action (RLS ensures user can only see their own)
     const { data: existing, error: fetchError } = await supabase
       .from('actions')
       .select('*')
@@ -37,9 +53,9 @@ export async function POST(
     // GitHub-first: toggle workflow before updating Supabase
     try {
       if (newStatus === 'paused') {
-        await bridge.disableWorkflow(id);
+        await bridge.disableWorkflow(userId, id);
       } else {
-        await bridge.enableWorkflow(id);
+        await bridge.enableWorkflow(userId, id);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -68,7 +84,7 @@ export async function POST(
       }
     }
 
-    // Update status in Supabase
+    // Update status in Supabase (RLS ensures user can only update their own)
     const { data, error: updateError } = await supabase
       .from('actions')
       .update({ status: newStatus, updated_at: new Date().toISOString() })

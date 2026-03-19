@@ -19,14 +19,14 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 describe('getScriptPath', () => {
-  it('returns correct script path for an action ID', () => {
-    expect(getScriptPath('abc-123')).toBe('scripts/abc-123.js');
+  it('returns correct script path for a userId and action ID', () => {
+    expect(getScriptPath('test-user-id-1234', 'abc-123')).toBe('scripts/test-user-id-1234/abc-123.js');
   });
 });
 
 describe('getWorkflowPath', () => {
-  it('returns correct workflow path for an action ID', () => {
-    expect(getWorkflowPath('abc-123')).toBe('.github/workflows/abc-123.yml');
+  it('returns correct workflow path for a userId and action ID', () => {
+    expect(getWorkflowPath('test-user-id-1234', 'abc-123')).toBe('.github/workflows/test-user-id-1234_abc-123.yml');
   });
 });
 
@@ -49,11 +49,11 @@ describe('GitHubBridge', () => {
       // Second call: PUT succeeds
       mockFetch.mockResolvedValueOnce({ ok: true, status: 201 });
 
-      await bridge.commitScript('action-1', 'console.log("hello")');
+      await bridge.commitScript('test-user-id-1234', 'action-1', 'console.log("hello")');
 
       expect(mockFetch).toHaveBeenCalledTimes(2);
       const putCall = mockFetch.mock.calls[1];
-      expect(putCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/scripts/action-1.js');
+      expect(putCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/scripts/test-user-id-1234/action-1.js');
       expect(putCall[1].method).toBe('PUT');
       const body = JSON.parse(putCall[1].body);
       expect(body.content).toBe(Buffer.from('console.log("hello")').toString('base64'));
@@ -67,7 +67,7 @@ describe('GitHubBridge', () => {
       });
       mockFetch.mockResolvedValueOnce({ ok: true, status: 200 });
 
-      await bridge.commitScript('action-1', 'console.log("updated")');
+      await bridge.commitScript('test-user-id-1234', 'action-1', 'console.log("updated")');
 
       const putCall = mockFetch.mock.calls[1];
       const body = JSON.parse(putCall[1].body);
@@ -81,7 +81,7 @@ describe('GitHubBridge', () => {
         text: async () => 'server error',
       });
 
-      await expect(bridge.commitScript('action-1', 'code')).rejects.toThrow('GitHub API error committing');
+      await expect(bridge.commitScript('test-user-id-1234', 'action-1', 'code')).rejects.toThrow('GitHub API error committing');
     });
   });
 
@@ -90,10 +90,10 @@ describe('GitHubBridge', () => {
       mockFetch.mockResolvedValueOnce({ status: 404, ok: false });
       mockFetch.mockResolvedValueOnce({ ok: true, status: 201 });
 
-      await bridge.commitWorkflow('action-1', 'name: test');
+      await bridge.commitWorkflow('test-user-id-1234', 'action-1', 'name: test');
 
       const putCall = mockFetch.mock.calls[1];
-      expect(putCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/.github/workflows/action-1.yml');
+      expect(putCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/.github/workflows/test-user-id-1234_action-1.yml');
     });
   });
 
@@ -105,10 +105,10 @@ describe('GitHubBridge', () => {
       });
       mockFetch.mockResolvedValueOnce({ ok: true, status: 200 });
 
-      await bridge.deleteScript('action-1');
+      await bridge.deleteScript('test-user-id-1234', 'action-1');
 
       const deleteCall = mockFetch.mock.calls[1];
-      expect(deleteCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/scripts/action-1.js');
+      expect(deleteCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/scripts/test-user-id-1234/action-1.js');
       expect(deleteCall[1].method).toBe('DELETE');
       const body = JSON.parse(deleteCall[1].body);
       expect(body.sha).toBe('sha-to-delete');
@@ -117,7 +117,7 @@ describe('GitHubBridge', () => {
     it('does nothing when file does not exist', async () => {
       mockFetch.mockResolvedValueOnce({ status: 404, ok: false });
 
-      await bridge.deleteScript('nonexistent');
+      await bridge.deleteScript('test-user-id-1234', 'nonexistent');
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
@@ -131,10 +131,10 @@ describe('GitHubBridge', () => {
       });
       mockFetch.mockResolvedValueOnce({ ok: true, status: 200 });
 
-      await bridge.deleteWorkflow('action-1');
+      await bridge.deleteWorkflow('test-user-id-1234', 'action-1');
 
       const deleteCall = mockFetch.mock.calls[1];
-      expect(deleteCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/.github/workflows/action-1.yml');
+      expect(deleteCall[0]).toBe('https://api.github.com/repos/test-owner/test-repo/contents/.github/workflows/test-user-id-1234_action-1.yml');
     });
   });
 
@@ -142,10 +142,10 @@ describe('GitHubBridge', () => {
     it('calls the enable endpoint', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
 
-      await bridge.enableWorkflow('action-1');
+      await bridge.enableWorkflow('test-user-id-1234', 'action-1');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.github.com/repos/test-owner/test-repo/actions/workflows/action-1.yml/enable',
+        'https://api.github.com/repos/test-owner/test-repo/actions/workflows/test-user-id-1234_action-1.yml/enable',
         expect.objectContaining({ method: 'PUT' })
       );
     });
@@ -156,7 +156,7 @@ describe('GitHubBridge', () => {
         text: async () => 'not found',
       });
 
-      await expect(bridge.enableWorkflow('bad-id')).rejects.toThrow('GitHub API error enabling workflow');
+      await expect(bridge.enableWorkflow('test-user-id-1234', 'bad-id')).rejects.toThrow('GitHub API error enabling workflow');
     });
   });
 
@@ -164,10 +164,10 @@ describe('GitHubBridge', () => {
     it('calls the disable endpoint', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
 
-      await bridge.disableWorkflow('action-1');
+      await bridge.disableWorkflow('test-user-id-1234', 'action-1');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.github.com/repos/test-owner/test-repo/actions/workflows/action-1.yml/disable',
+        'https://api.github.com/repos/test-owner/test-repo/actions/workflows/test-user-id-1234_action-1.yml/disable',
         expect.objectContaining({ method: 'PUT' })
       );
     });
@@ -177,11 +177,11 @@ describe('GitHubBridge', () => {
     it('dispatches workflow with ref main', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
 
-      await bridge.triggerWorkflow('action-1');
+      await bridge.triggerWorkflow('test-user-id-1234', 'action-1');
 
       const call = mockFetch.mock.calls[0];
       expect(call[0]).toBe(
-        'https://api.github.com/repos/test-owner/test-repo/actions/workflows/action-1.yml/dispatches'
+        'https://api.github.com/repos/test-owner/test-repo/actions/workflows/test-user-id-1234_action-1.yml/dispatches'
       );
       expect(call[1].method).toBe('POST');
       expect(JSON.parse(call[1].body)).toEqual({ ref: 'main' });
@@ -193,7 +193,7 @@ describe('GitHubBridge', () => {
         text: async () => 'error',
       });
 
-      await expect(bridge.triggerWorkflow('action-1')).rejects.toThrow('GitHub API error triggering workflow');
+      await expect(bridge.triggerWorkflow('test-user-id-1234', 'action-1')).rejects.toThrow('GitHub API error triggering workflow');
     });
   });
 
@@ -221,7 +221,7 @@ describe('GitHubBridge', () => {
         }),
       });
 
-      const runs = await bridge.getWorkflowRuns('action-1', 1);
+      const runs = await bridge.getWorkflowRuns('test-user-id-1234', 'action-1', 1);
 
       expect(runs).toHaveLength(2);
       expect(runs[0]).toEqual({
@@ -251,7 +251,7 @@ describe('GitHubBridge', () => {
         }),
       });
 
-      const runs = await bridge.getWorkflowRuns('action-1', 1, 'success');
+      const runs = await bridge.getWorkflowRuns('test-user-id-1234', 'action-1', 1, 'success');
       expect(runs).toHaveLength(1);
       expect(runs[0].status).toBe('success');
     });
@@ -267,7 +267,7 @@ describe('GitHubBridge', () => {
         }),
       });
 
-      const runs = await bridge.getWorkflowRuns('action-1', 1, 'failure');
+      const runs = await bridge.getWorkflowRuns('test-user-id-1234', 'action-1', 1, 'failure');
       expect(runs).toHaveLength(1);
       expect(runs[0].status).toBe('failure');
     });
@@ -278,7 +278,7 @@ describe('GitHubBridge', () => {
         text: async () => 'rate limited',
       });
 
-      await expect(bridge.getWorkflowRuns('action-1', 1)).rejects.toThrow('GitHub API error fetching runs');
+      await expect(bridge.getWorkflowRuns('test-user-id-1234', 'action-1', 1)).rejects.toThrow('GitHub API error fetching runs');
     });
   });
 });

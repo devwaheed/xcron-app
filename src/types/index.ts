@@ -24,4 +24,5 @@ export interface Action {
   cronJobId?: number;
   createdAt: string;
   updatedAt: string;
+  userId: string;
 }

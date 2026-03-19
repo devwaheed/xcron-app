@@ -64,6 +64,7 @@ const arbitraryAction: fc.Arbitrary<Action> = fc.record({
   updatedAt: fc
     .integer({ min: 946684800000, max: 1893456000000 })
     .map((ms) => new Date(ms).toISOString()),
+  userId: fc.constant('test-user-id-1234'),
 });
 
 

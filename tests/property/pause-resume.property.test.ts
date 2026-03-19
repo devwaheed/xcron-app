@@ -8,10 +8,25 @@ import type { Action, Schedule } from '@/types';
 
 const mockFrom = vi.fn();
 
+const TEST_USER_ID = 'test-user-id-1234';
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(async () => ({
+    get: (name: string) => {
+      if (name === 'sb-access-token') return { value: 'mock-token' };
+      return undefined;
+    },
+  })),
+}));
+
 vi.mock('@/lib/supabase-server', () => ({
   getSupabaseServerClient: () => ({
     from: mockFrom,
   }),
+  getAuthenticatedClient: vi.fn(async () => ({
+    supabase: { from: mockFrom },
+    userId: TEST_USER_ID,
+  })),
 }));
 
 const mockEnableWorkflow = vi.fn();
@@ -59,6 +74,7 @@ const arbitraryAction: fc.Arbitrary<Action> = fc.record({
   updatedAt: fc
     .integer({ min: 946684800000, max: 1893456000000 })
     .map((ms) => new Date(ms).toISOString()),
+  userId: fc.constant(TEST_USER_ID),
 });
 
 
@@ -79,6 +95,7 @@ function actionToRow(action: Action): Record<string, unknown> {
     cron_job_id: action.cronJobId ?? null,
     created_at: action.createdAt,
     updated_at: action.updatedAt,
+    user_id: action.userId,
   };
 }
 
@@ -152,7 +169,7 @@ describe('Property 9: Pause/resume round-trip', () => {
           expect(pausedBody.status).toBe('paused');
 
           // Verify disableWorkflow was called
-          expect(mockDisableWorkflow).toHaveBeenCalledWith(action.id);
+          expect(mockDisableWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
           expect(mockEnableWorkflow).not.toHaveBeenCalled();
 
           // ── Step 2: Resume (paused → active) ──
@@ -169,7 +186,7 @@ describe('Property 9: Pause/resume round-trip', () => {
           expect(resumedBody.status).toBe('active');
 
           // Verify enableWorkflow was called on resume
-          expect(mockEnableWorkflow).toHaveBeenCalledWith(action.id);
+          expect(mockEnableWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
 
           // Round-trip: status is back to active
           expect(resumedBody.status).toBe(action.status);

@@ -1,38 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getSupabaseServerClient, getAuthenticatedClient } from '@/lib/supabase-server';
 import { createGitHubBridge } from '@/lib/github-bridge';
 
 /**
  * POST /api/actions/[id]/trigger
  * Triggers a workflow run via GitHub workflow dispatch.
  * Called by cron-job.org on schedule, or manually from the dashboard.
- * When CRON_SECRET is set, requests from cron-job.org must include
- * the Authorization: Bearer <secret> header.
+ *
+ * Two auth paths:
+ * 1. cron-job.org: No cookies, validates CRON_SECRET in Authorization header,
+ *    uses service role client (bypasses RLS), fetches action's user_id from row.
+ * 2. User-initiated: Has cookies, uses getAuthenticatedClient (RLS enforced).
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Auth check: if CRON_SECRET is set, validate it.
-    // Skip auth check for requests coming from the app itself (they use cookies).
+    const { id } = await params;
     const cronSecret = process.env.CRON_SECRET;
     const authHeader = request.headers.get('authorization');
-    const hasCookies = request.headers.has('cookie');
 
-    if (cronSecret && !hasCookies) {
-      if (authHeader !== `Bearer ${cronSecret}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Determine if this is a cron-job.org call or a user-initiated call
+    let supabase;
+    let actionUserId: string | undefined;
+    let isCronCall = false;
+
+    // Check for CRON_SECRET auth (cron-job.org path)
+    if (authHeader === `Bearer ${cronSecret}` && cronSecret) {
+      isCronCall = true;
+      supabase = getSupabaseServerClient();
+    } else {
+      // User-initiated path: authenticate via cookies
+      try {
+        const cookieStore = await cookies();
+        const auth = await getAuthenticatedClient(cookieStore);
+        supabase = auth.supabase;
+        actionUserId = auth.userId;
+      } catch {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        );
       }
     }
 
-    const { id } = await params;
-
     // Confirm the action exists and check its status
-    const supabase = getSupabaseServerClient();
     const { data: existing, error: fetchError } = await supabase
       .from('actions')
-      .select('id, status')
+      .select('id, status, user_id')
       .eq('id', id)
       .single();
 
@@ -42,6 +59,9 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    // For cron calls, get the user_id from the action row
+    const userId = isCronCall ? existing.user_id : actionUserId!;
 
     // Reject triggers for paused actions (defense-in-depth: cron-job.org
     // should already be disabled, but guard against race conditions)
@@ -54,7 +74,7 @@ export async function POST(
 
     const bridge = createGitHubBridge();
     try {
-      await bridge.triggerWorkflow(id);
+      await bridge.triggerWorkflow(userId, id);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(

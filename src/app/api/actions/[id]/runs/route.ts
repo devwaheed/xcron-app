@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { createGitHubBridge } from '@/lib/github-bridge';
 
 const MAX_ENTRIES = 100;
@@ -13,11 +14,25 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let userId: string;
+  let supabase;
+
+  try {
+    const cookieStore = await cookies();
+    const auth = await getAuthenticatedClient(cookieStore);
+    supabase = auth.supabase;
+    userId = auth.userId;
+  } catch {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
   try {
     const { id } = await params;
 
-    // Confirm the action exists
-    const supabase = getSupabaseServerClient();
+    // Confirm the action exists (RLS ensures user can only see their own)
     const { data: existing, error: fetchError } = await supabase
       .from('actions')
       .select('id')
@@ -37,7 +52,7 @@ export async function GET(
 
     const bridge = createGitHubBridge();
     try {
-      const runs = await bridge.getWorkflowRuns(id, page, status);
+      const runs = await bridge.getWorkflowRuns(userId, id, page, status);
       return NextResponse.json(runs.slice(0, MAX_ENTRIES));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';

@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getSupabaseServerClient, resetSupabaseServerClient } from '../supabase-server';
+import { getSupabaseServerClient, resetSupabaseServerClient, getAuthenticatedClient } from '../supabase-server';
+
+const mockGetUser = vi.fn();
+const mockRefreshSession = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
-  createClient: vi.fn(() => ({ from: vi.fn() })),
+  createClient: vi.fn(() => ({
+    from: vi.fn(),
+    auth: {
+      getUser: mockGetUser,
+      refreshSession: mockRefreshSession,
+    },
+  })),
 }));
 
 import { createClient } from '@supabase/supabase-js';
@@ -19,6 +28,15 @@ const fullEnv = {
   CRON_SECRET: 'test-cron-secret',
   NEXT_PUBLIC_APP_URL: 'https://example.com',
 };
+
+function makeCookieStore(cookies: Record<string, string>) {
+  return {
+    get: (name: string) => {
+      const value = cookies[name];
+      return value !== undefined ? { name, value } : undefined;
+    },
+  } as any;
+}
 
 describe('getSupabaseServerClient', () => {
   beforeEach(() => {
@@ -62,5 +80,112 @@ describe('getSupabaseServerClient', () => {
     getSupabaseServerClient();
 
     expect(createClient).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('getAuthenticatedClient', () => {
+  beforeEach(() => {
+    resetSupabaseServerClient();
+    vi.mocked(createClient).mockClear();
+    mockGetUser.mockReset();
+    mockRefreshSession.mockReset();
+    for (const [key, value] of Object.entries(fullEnv)) {
+      vi.stubEnv(key, value);
+    }
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('returns supabase client and userId when access token is valid', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
+
+    const cookieStore = makeCookieStore({ 'sb-access-token': 'valid-token' });
+    const result = await getAuthenticatedClient(cookieStore);
+
+    expect(result.userId).toBe('user-123');
+    expect(result.supabase).toBeDefined();
+    expect(createClient).toHaveBeenCalledWith(
+      'https://example.supabase.co',
+      'anon-key',
+      expect.objectContaining({
+        global: { headers: { Authorization: 'Bearer valid-token' } },
+      })
+    );
+  });
+
+  it('refreshes session when access token is expired but refresh token exists', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Token expired' },
+    });
+    mockRefreshSession.mockResolvedValue({
+      data: {
+        session: { access_token: 'new-token' },
+        user: { id: 'user-456' },
+      },
+      error: null,
+    });
+
+    const cookieStore = makeCookieStore({
+      'sb-access-token': 'expired-token',
+      'sb-refresh-token': 'valid-refresh',
+    });
+    const result = await getAuthenticatedClient(cookieStore);
+
+    expect(result.userId).toBe('user-456');
+    expect(mockRefreshSession).toHaveBeenCalledWith({ refresh_token: 'valid-refresh' });
+  });
+
+  it('refreshes session when only refresh token exists (no access token)', async () => {
+    mockRefreshSession.mockResolvedValue({
+      data: {
+        session: { access_token: 'new-token' },
+        user: { id: 'user-789' },
+      },
+      error: null,
+    });
+
+    const cookieStore = makeCookieStore({ 'sb-refresh-token': 'valid-refresh' });
+    const result = await getAuthenticatedClient(cookieStore);
+
+    expect(result.userId).toBe('user-789');
+    expect(mockGetUser).not.toHaveBeenCalled();
+  });
+
+  it('throws when no cookies are present', async () => {
+    const cookieStore = makeCookieStore({});
+    await expect(getAuthenticatedClient(cookieStore)).rejects.toThrow('Authentication required');
+  });
+
+  it('throws when access token is invalid and no refresh token exists', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid token' },
+    });
+
+    const cookieStore = makeCookieStore({ 'sb-access-token': 'bad-token' });
+    await expect(getAuthenticatedClient(cookieStore)).rejects.toThrow('Authentication required');
+  });
+
+  it('throws when both access token and refresh token fail', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Token expired' },
+    });
+    mockRefreshSession.mockResolvedValue({
+      data: { session: null, user: null },
+      error: { message: 'Refresh failed' },
+    });
+
+    const cookieStore = makeCookieStore({
+      'sb-access-token': 'expired-token',
+      'sb-refresh-token': 'expired-refresh',
+    });
+    await expect(getAuthenticatedClient(cookieStore)).rejects.toThrow('Authentication required');
   });
 });
