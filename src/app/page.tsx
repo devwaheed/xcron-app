@@ -65,6 +65,7 @@ export default function LandingPage() {
             <a href="#features" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Features</a>
             <a href="#how-it-works" className="text-sm text-slate-500 transition-colors hover:text-slate-900">How it works</a>
             <a href="#pricing" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Pricing</a>
+            <Link href="/docs" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Docs</Link>
             <a href="#stats" className="text-sm text-slate-500 transition-colors hover:text-slate-900">Why xCron</a>
           </div>
 
@@ -394,6 +395,35 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" className="border-t border-slate-100 bg-slate-50/50 px-6 py-24 lg:py-32">
+        <div className="mx-auto max-w-3xl">
+          <ScrollReveal>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Frequently asked questions</h2>
+              <p className="mt-4 text-lg text-slate-500">Quick answers to common questions.</p>
+            </div>
+          </ScrollReveal>
+          <div className="mt-12 space-y-6">
+            {[
+              { q: "What kind of scripts can I run?", a: "Any JavaScript that Node.js can execute — HTTP requests, data processing, web scraping, API integrations, database operations, and more." },
+              { q: "Do I need to manage any servers?", a: "No. Your scripts run on GitHub Actions infrastructure. xCron handles all the orchestration — you just write the code." },
+              { q: "How reliable is the scheduling?", a: "We use dual scheduling with GitHub Actions cron and cron-job.org for redundancy. If one system has a delay, the other ensures your job runs." },
+              { q: "Can I self-host xCron?", a: "Yes. xCron is fully self-hostable. You'll need Supabase, a GitHub repo, and optionally cron-job.org. See our docs for the full setup guide." },
+              { q: "What happens if my script fails?", a: "Failed runs are logged with full error output. You can view them in your run history and optionally receive email alerts." },
+              { q: "Is there a free tier?", a: "The Starter plan gives you 5 jobs and 100 runs per month — enough to try things out and automate your side projects." },
+            ].map((item, i) => (
+              <ScrollReveal key={i} delay={i * 50}>
+                <div className="rounded-xl border border-slate-200 bg-white p-6">
+                  <h3 className="text-base font-semibold text-slate-900">{item.q}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-500">{item.a}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="px-6 py-24 lg:py-32">
         <ScrollReveal>
@@ -433,6 +463,7 @@ export default function LandingPage() {
               <a href="#features" className="transition-colors hover:text-slate-600">Features</a>
               <a href="#how-it-works" className="transition-colors hover:text-slate-600">How it works</a>
               <a href="#pricing" className="transition-colors hover:text-slate-600">Pricing</a>
+              <Link href="/docs" className="transition-colors hover:text-slate-600">Docs</Link>
               <Link href="/login" className="transition-colors hover:text-slate-600">Sign in</Link>
             </div>
             <div className="text-sm text-slate-300">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/reset-password
@@ -8,6 +9,15 @@ import { getSupabaseServerClient } from '@/lib/supabase-server';
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = checkRateLimit(`reset:${ip}`, RATE_LIMITS.passwordReset);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many reset attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds ?? 300) } }
+      );
+    }
+
     const body = await request.json();
     const { email } = body;
 
@@ -21,10 +31,8 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseServerClient();
     await supabase.auth.resetPasswordForEmail(email);
 
-    // Always return success to avoid revealing if the email exists
     return NextResponse.json({ success: true });
   } catch {
-    // Still return success to not leak information
     return NextResponse.json({ success: true });
   }
 }

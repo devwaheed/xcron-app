@@ -17,7 +17,10 @@ vi.mock('@/lib/supabase-server', () => ({
 function createRequest(body: unknown): Request {
   return new Request('http://localhost:3000', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-forwarded-for': `test-${Math.random().toString(36).slice(2)}`,
+    },
     body: JSON.stringify(body),
   });
 }

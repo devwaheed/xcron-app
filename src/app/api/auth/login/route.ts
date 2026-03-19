@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { assignPlan } from '@/lib/usage-tracker';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { sendWelcomeEmail } from '@/lib/email';
 
 /**
  * POST /api/auth/login
@@ -9,8 +11,18 @@ import { assignPlan } from '@/lib/usage-tracker';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit by IP
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = checkRateLimit(`auth:${ip}`, RATE_LIMITS.auth);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds ?? 60) } }
+      );
+    }
+
     const body = await request.json();
-    const { email, password, signup, plan_id, promo_code } = body;
+    const { email, password, signup, plan_id, promo_code, display_name } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -18,6 +30,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const displayName = display_name || email.split("@")[0];
 
     const supabase = getSupabaseServerClient();
 
@@ -80,6 +94,9 @@ export async function POST(request: NextRequest) {
             .eq('id', promoRecord.id)
             .is('redeemed_by', null);
         }
+
+        // Send welcome email (non-blocking)
+        sendWelcomeEmail(email, displayName).catch(() => {});
       }
 
       const response = NextResponse.json({ success: true });

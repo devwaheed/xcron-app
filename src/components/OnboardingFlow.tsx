@@ -39,9 +39,22 @@ export const ACTION_TEMPLATES: ActionTemplate[] = [
     id: "health-check-ping",
     name: "Health Check Ping",
     description: "Ping an endpoint every weekday morning to verify it's up and responding.",
-    scriptContent: `// Health Check Ping\nconst response = await fetch("https://example.com/health");\nif (!response.ok) throw new Error(\`Health check failed: \${response.status}\`);`,
+    scriptContent: `// Health Check Ping
+// Replace the URL with your own endpoint
+const url = "https://example.com/health";
+
+const response = await fetch(url);
+const status = response.status;
+const body = await response.text();
+
+if (!response.ok) {
+  throw new Error(\`Health check failed: HTTP \${status} — \${body.slice(0, 200)}\`);
+}
+
+console.log(\`✓ Health check passed: HTTP \${status}\`);
+console.log(\`Response: \${body.slice(0, 500)}\`);`,
     schedule: {
-      days: [1, 2, 3, 4, 5], // Mon–Fri
+      days: [1, 2, 3, 4, 5],
       hour: 9,
       minute: 0,
       period: "AM",
@@ -49,26 +62,59 @@ export const ACTION_TEMPLATES: ActionTemplate[] = [
     },
   },
   {
-    id: "database-backup",
-    name: "Database Backup",
-    description: "Run a daily database backup script in the early morning hours.",
-    scriptContent: `// Database Backup\nconsole.log("Starting database backup...");\nconst timestamp = new Date().toISOString();\nconsole.log(\`Backup completed at \${timestamp}\`);`,
+    id: "api-data-fetch",
+    name: "Daily API Fetch",
+    description: "Fetch data from an API daily and log the results. Great for monitoring or data collection.",
+    scriptContent: `// Daily API Data Fetch
+// Replace with your API endpoint
+const url = "https://jsonplaceholder.typicode.com/posts/1";
+
+const response = await fetch(url);
+if (!response.ok) throw new Error(\`API call failed: \${response.status}\`);
+
+const data = await response.json();
+console.log("Fetched data:", JSON.stringify(data, null, 2));
+console.log(\`Completed at \${new Date().toISOString()}\`);`,
     schedule: {
-      days: [0, 1, 2, 3, 4, 5, 6], // Every day
-      hour: 2,
+      days: [0, 1, 2, 3, 4, 5, 6],
+      hour: 7,
       minute: 0,
       period: "AM",
       timezone: "UTC",
     },
   },
   {
-    id: "daily-report",
-    name: "Daily Report",
-    description: "Generate and send a summary report every weekday morning.",
-    scriptContent: `// Daily Report Generation\nconst report = { date: new Date().toISOString(), status: "generated" };\nconsole.log("Report:", JSON.stringify(report));`,
+    id: "slack-notification",
+    name: "Slack Notification",
+    description: "Send a daily summary or reminder to a Slack channel via webhook.",
+    scriptContent: `// Slack Notification
+// Replace with your Slack webhook URL
+const webhookUrl = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL";
+
+const message = {
+  text: \`📊 Daily update — \${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}\`,
+  blocks: [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "*Daily Automated Report*\\nEverything is running smoothly. ✅"
+      }
+    }
+  ]
+};
+
+const res = await fetch(webhookUrl, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(message),
+});
+
+if (!res.ok) throw new Error(\`Slack webhook failed: \${res.status}\`);
+console.log("Slack notification sent successfully");`,
     schedule: {
-      days: [1, 2, 3, 4, 5], // Mon–Fri
-      hour: 8,
+      days: [1, 2, 3, 4, 5],
+      hour: 9,
       minute: 0,
       period: "AM",
       timezone: "UTC",

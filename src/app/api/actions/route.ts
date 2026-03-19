@@ -7,6 +7,7 @@ import { generate } from '@/lib/workflow-generator';
 import { createGitHubBridge } from '@/lib/github-bridge';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { checkActionLimit } from '@/lib/usage-tracker';
+import { sanitizeScript } from '@/lib/script-sanitizer';
 import type { Action, Schedule } from '@/types';
 
 /**
@@ -97,6 +98,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Sanitize script content
+    const sanitizeResult = sanitizeScript(scriptContent);
+    if (!sanitizeResult.valid) {
+      return NextResponse.json(
+        { error: 'Script validation failed', fields: sanitizeResult.errors },
+        { status: 400 }
+      );
+    }
+    const cleanScript = sanitizeResult.sanitized;
+
     if (!schedule) {
       return NextResponse.json(
         { error: 'Validation failed', fields: ['schedule is required'] },
@@ -121,7 +132,7 @@ export async function POST(request: NextRequest) {
     const action: Action = {
       id: actionId,
       name: name.trim(),
-      scriptContent,
+      scriptContent: cleanScript,
       schedule,
       status: 'active',
       createdAt: now,
@@ -135,7 +146,7 @@ export async function POST(request: NextRequest) {
     // GitHub-first: commit script and workflow before touching Supabase
     const bridge = createGitHubBridge();
     try {
-      await bridge.commitScript(userId, actionId, scriptContent);
+      await bridge.commitScript(userId, actionId, cleanScript);
       await bridge.commitWorkflow(userId, actionId, workflowYaml);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -164,7 +175,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: actionId,
         name: name.trim(),
-        script_content: scriptContent,
+        script_content: cleanScript,
         days: schedule.days,
         time_hour: schedule.hour,
         time_minute: schedule.minute,
