@@ -76,7 +76,7 @@ export default function BillingPage() {
             <div className="space-y-2 text-sm text-slate-600">
               <p>Plan: <span className="font-medium text-slate-900">{planName}</span></p>
               {planLimits && (
-                <p>{planLimits.actions} actions · {planLimits.runs.toLocaleString()} runs/month · {planLimits.retention >= 365 ? "1 year" : `${planLimits.retention} days`} log retention</p>
+                <p>{planLimits.actions} jobs · {planLimits.runs.toLocaleString()} runs/month · {planLimits.retention >= 365 ? "1 year" : `${planLimits.retention} days`} log retention</p>
               )}
             </div>
             <Link href="/pricing"

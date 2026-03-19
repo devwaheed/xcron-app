@@ -17,7 +17,7 @@ import { useShortcut } from "@/lib/shortcuts";
 import { useTheme } from "@/components/ThemeProvider";
 import type { ThemeMode } from "@/lib/theme";
 import { PlusIcon, AlertTriangleIcon, XCloseIcon, PauseIcon } from "@/components/icons";
-import UsageDisplay from "@/components/UsageDisplay";
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -117,7 +117,7 @@ export default function DashboardPage() {
   const commands = useMemo<Command[]>(() => {
     const cmds: Command[] = [
       { id: "nav-dashboard", label: "Go to Dashboard", action: () => router.push("/dashboard"), category: "navigation" },
-      { id: "nav-new", label: "New Action", shortcut: "N", action: () => router.push("/dashboard/new"), category: "action" },
+      { id: "nav-new", label: "New Job", shortcut: "N", action: () => router.push("/dashboard/new"), category: "action" },
       { id: "toggle-theme", label: "Toggle Theme", shortcut: "T", action: cycleTheme, category: "settings" },
     ];
     for (const action of actions) {
@@ -136,13 +136,13 @@ export default function DashboardPage() {
       {/* Page header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Actions</h1>
-          <p className="mt-1 text-sm text-slate-500">Manage your scheduled actions</p>
+          <h1 className="text-xl font-semibold text-slate-900">Jobs</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage your scheduled jobs</p>
         </div>
         <Link href="/dashboard/new"
           className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-600/20 transition-all hover:shadow-xl hover:shadow-violet-600/30 hover:brightness-110">
           <PlusIcon size={14} />
-          New Action
+          New Job
         </Link>
       </div>
 
@@ -164,9 +164,6 @@ export default function DashboardPage() {
         <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50/80 px-5 py-3.5 text-sm text-red-600">{error}</div>
       )}
 
-      {/* Usage display */}
-      {!loading && <div className="mb-6"><UsageDisplay /></div>}
-
       {/* Stats bar */}
       {!loading && actions.length > 0 && (
         <div className="mb-8 grid gap-4 sm:grid-cols-3">
@@ -178,7 +175,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500">Total Actions</p>
+                <p className="text-xs font-medium text-slate-500">Total Jobs</p>
                 <p className="text-xl font-semibold text-slate-800">{actions.length}</p>
               </div>
             </div>
@@ -255,9 +252,9 @@ export default function DashboardPage() {
         isOnboardingComplete() ? (
           <EmptyState
             illustration="no-actions"
-            heading="No actions yet"
-            description="Create your first scheduled action to get started."
-            action={{ label: "Create Your First Action", onClick: () => router.push("/dashboard/new") }}
+            heading="No jobs yet"
+            description="Create your first scheduled job to get started."
+            action={{ label: "Create Your First Job", onClick: () => router.push("/dashboard/new") }}
           />
         ) : (
           <OnboardingFlow
@@ -277,7 +274,7 @@ export default function DashboardPage() {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        message="This will permanently remove the action, its script, and workflow from GitHub. This cannot be undone."
+        message="This will permanently remove the job, its script, and workflow from GitHub. This cannot be undone."
         onConfirm={handleDeleteConfirm}
         onCancel={() => { if (!deleting) setDeleteTarget(null); }}
         loading={deleting}

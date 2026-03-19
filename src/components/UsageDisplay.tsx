@@ -77,7 +77,7 @@ export default function UsageDisplay() {
         </span>
       </div>
       <div className="space-y-3">
-        <ProgressBar used={stats.actions.used} limit={stats.actions.limit} label="Actions" warning={actionWarning} />
+        <ProgressBar used={stats.actions.used} limit={stats.actions.limit} label="Jobs" warning={actionWarning} />
         <ProgressBar used={stats.runs.used} limit={stats.runs.limit} label="Runs this month" warning={runWarning} />
       </div>
     </div>

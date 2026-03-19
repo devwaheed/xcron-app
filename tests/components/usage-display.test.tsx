@@ -37,7 +37,7 @@ describe('UsageDisplay', () => {
       expect(screen.getByText('Starter Plan')).toBeTruthy();
       expect(screen.getByText('3 / 5')).toBeTruthy();
       expect(screen.getByText('42 / 100')).toBeTruthy();
-      expect(screen.getByText('Actions')).toBeTruthy();
+      expect(screen.getByText('Jobs')).toBeTruthy();
       expect(screen.getByText('Runs this month')).toBeTruthy();
     });
   });

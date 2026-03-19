@@ -117,7 +117,7 @@ export default function EditActionPage() {
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
             </Link>
-            <h1 className="text-xl font-semibold text-slate-900">Edit Action</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Edit Job</h1>
           </div>
           <button type="button" onClick={() => router.push("/dashboard")}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">

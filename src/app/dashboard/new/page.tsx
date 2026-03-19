@@ -100,7 +100,7 @@ export default function NewActionPage() {
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
             </Link>
-            <h1 className="text-xl font-semibold text-slate-900">Create New Action</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Create New Job</h1>
           </div>
           <button type="button" onClick={() => router.push("/dashboard")}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">
@@ -111,7 +111,7 @@ export default function NewActionPage() {
         {atLimit ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-center">
             <p className="text-sm font-medium text-amber-700">
-              You have reached your action limit. Upgrade your plan or delete an existing action.
+              You have reached your job limit. Upgrade your plan or delete an existing job.
             </p>
             <a href="/pricing" className="mt-3 inline-block rounded-xl bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:brightness-110">
               Upgrade Plan
@@ -121,7 +121,7 @@ export default function NewActionPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {actionSlots && (
             <div className="text-xs font-medium text-slate-500">
-              {actionSlots.limit - actionSlots.used} of {actionSlots.limit} action slots remaining
+              {actionSlots.limit - actionSlots.used} of {actionSlots.limit} job slots remaining
             </div>
           )}
 
