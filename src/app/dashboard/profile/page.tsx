@@ -98,7 +98,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
             >
               ← Dashboard
             </Link>

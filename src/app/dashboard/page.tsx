@@ -180,7 +180,7 @@ export default function DashboardPage() {
               <span className="hidden sm:inline">New Action</span>
             </Link>
             <Link href="/dashboard/profile"
-              className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">
               Profile
             </Link>
             <button onClick={handleLogout} disabled={loggingOut}
