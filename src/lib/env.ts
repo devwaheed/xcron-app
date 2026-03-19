@@ -9,6 +9,10 @@ export interface EnvConfig {
   CRONJOB_API_KEY: string;
   CRON_SECRET: string;
   NEXT_PUBLIC_APP_URL: string;
+  // Optional Stripe vars (not required for self-hosting)
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
 }
 
 const requiredVars: (keyof EnvConfig)[] = [
@@ -50,5 +54,9 @@ export function getEnvConfig(): EnvConfig {
     CRONJOB_API_KEY: process.env.CRONJOB_API_KEY!,
     CRON_SECRET: process.env.CRON_SECRET!,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL!,
+    // Optional Stripe vars
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || undefined,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || undefined,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || undefined,
   };
 }

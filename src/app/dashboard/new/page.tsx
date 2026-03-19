@@ -41,6 +41,8 @@ export default function NewActionPage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [actionSlots, setActionSlots] = useState<{ used: number; limit: number } | null>(null);
+  const [atLimit, setAtLimit] = useState(false);
 
   useEffect(() => {
     async function loadProfileTimezone() {
@@ -58,7 +60,22 @@ export default function NewActionPage() {
         setSchedule((prev) => ({ ...prev, timezone: "UTC" }));
       }
     }
+    async function loadUsage() {
+      try {
+        const res = await fetch("/api/usage");
+        if (res.ok) {
+          const data = await res.json();
+          setActionSlots(data.actions);
+          if (data.actions.used >= data.actions.limit) {
+            setAtLimit(true);
+          }
+        }
+      } catch {
+        // Non-critical, allow form to work
+      }
+    }
     loadProfileTimezone();
+    loadUsage();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -117,7 +134,23 @@ export default function NewActionPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8">
+        {atLimit ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-center backdrop-blur-xl">
+            <p className="text-sm font-medium text-amber-700">
+              You have reached your action limit. Upgrade your plan or delete an existing action.
+            </p>
+            <a href="/pricing" className="mt-3 inline-block rounded-xl bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:brightness-110">
+              Upgrade Plan
+            </a>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {actionSlots && (
+            <div className="text-xs font-medium text-slate-500">
+              {actionSlots.limit - actionSlots.used} of {actionSlots.limit} action slots remaining
+            </div>
+          )}
+
           {errors.api && (
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-600">
               {errors.api}
@@ -182,6 +215,7 @@ export default function NewActionPage() {
             </button>
           </div>
         </form>
+        )}
       </main>
     </div>
   );

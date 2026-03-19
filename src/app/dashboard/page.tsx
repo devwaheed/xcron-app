@@ -18,6 +18,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import type { ThemeMode } from "@/lib/theme";
 import { Logo } from "@/components/Logo";
 import { PlusIcon, AlertTriangleIcon, XCloseIcon, PauseIcon } from "@/components/icons";
+import UsageDisplay from "@/components/UsageDisplay";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -210,6 +211,9 @@ export default function DashboardPage() {
         {error && (
           <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50/80 px-5 py-3.5 text-sm text-red-600 backdrop-blur-xl">{error}</div>
         )}
+
+        {/* Usage display */}
+        {!loading && <div className="mb-6"><UsageDisplay /></div>}
 
         {/* Stats bar */}
         {!loading && actions.length > 0 && (

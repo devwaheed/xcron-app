@@ -77,6 +77,13 @@ vi.mock('@/lib/workflow-generator', () => ({
   generate: () => 'name: mock-workflow\n',
 }));
 
+// Mock usage tracker to always allow (not the focus of these tests)
+vi.mock('@/lib/usage-tracker', () => ({
+  checkActionLimit: vi.fn().mockResolvedValue({ allowed: true, current: 0, limit: 50 }),
+  checkRunLimit: vi.fn().mockResolvedValue({ allowed: true, current: 0, limit: 2000 }),
+  recordRun: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock crypto.randomUUID
 vi.stubGlobal('crypto', {
   ...globalThis.crypto,

@@ -126,9 +126,9 @@ describe('Property 4: Form validation rejects incomplete submissions', () => {
           expect(hasError).toBeTruthy();
         });
 
-        // fetch should NOT have been called for form submission (profile fetch is expected)
+        // fetch should NOT have been called for form submission (profile and usage fetches are expected)
         const actionCalls = fetchSpy.mock.calls.filter(
-          (call) => call[0] !== '/api/profile'
+          (call) => call[0] !== '/api/profile' && call[0] !== '/api/usage'
         );
         expect(actionCalls).toHaveLength(0);
 

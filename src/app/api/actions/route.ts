@@ -6,6 +6,7 @@ import { validateSchedule } from '@/lib/schedule-validator';
 import { generate } from '@/lib/workflow-generator';
 import { createGitHubBridge } from '@/lib/github-bridge';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
+import { checkActionLimit } from '@/lib/usage-tracker';
 import type { Action, Schedule } from '@/types';
 
 /**
@@ -60,6 +61,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Check action limit before processing
+    try {
+      const limitCheck = await checkActionLimit(supabase, userId);
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          { error: 'Action limit reached', current: limitCheck.current, limit: limitCheck.limit },
+          { status: 403 }
+        );
+      }
+    } catch {
+      // If usage tracking fails, allow the action (graceful degradation)
+      console.error('Usage tracking unavailable, allowing action creation');
+    }
+
     const body = await request.json();
     const { name, scriptContent, schedule } = body as {
       name?: string;

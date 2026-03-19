@@ -26,6 +26,13 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [timezone, setTimezone] = useState("UTC");
 
+  // Plan & promo state
+  const [planName, setPlanName] = useState("");
+  const [planLimits, setPlanLimits] = useState<{ actions: number; runs: number; retention: number } | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [promoMessage, setPromoMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   const timezones = getTimezones();
 
   const fetchProfile = useCallback(async () => {
@@ -47,9 +54,27 @@ export default function ProfilePage() {
     }
   }, []);
 
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await fetch("/api/usage");
+      if (res.ok) {
+        const data = await res.json();
+        setPlanName(data.planName);
+        setPlanLimits({
+          actions: data.actions.limit,
+          runs: data.runs.limit,
+          retention: data.logRetentionDays,
+        });
+      }
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    fetchUsage();
+  }, [fetchProfile, fetchUsage]);
 
   async function handleSave() {
     setSaving(true);
@@ -78,6 +103,31 @@ export default function ProfilePage() {
       showToast("Failed to save profile", "error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleRedeem() {
+    if (!promoCode.trim()) return;
+    setRedeeming(true);
+    setPromoMessage(null);
+    try {
+      const res = await fetch("/api/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoCode.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPromoMessage({ type: "success", text: `Plan upgraded to ${data.planName}` });
+        setPromoCode("");
+        fetchUsage();
+      } else {
+        setPromoMessage({ type: "error", text: data.error || "Failed to redeem code" });
+      }
+    } catch {
+      setPromoMessage({ type: "error", text: "Failed to redeem code" });
+    } finally {
+      setRedeeming(false);
     }
   }
 
@@ -187,6 +237,49 @@ export default function ProfilePage() {
                 Save Changes
               </Button>
             </div>
+          </Card>
+        )}
+
+        {/* Current Plan */}
+        {!loading && !error && planName && (
+          <Card className="mt-6">
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Current Plan</h2>
+            <div className="space-y-2 text-sm text-slate-600">
+              <p>Plan: <span className="font-medium text-slate-900">{planName}</span></p>
+              {planLimits && (
+                <>
+                  <p>{planLimits.actions} actions · {planLimits.runs.toLocaleString()} runs/month · {planLimits.retention >= 365 ? "1 year" : `${planLimits.retention} days`} log retention</p>
+                </>
+              )}
+            </div>
+            <Link href="/pricing"
+              className="mt-4 inline-block rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-600 transition-all hover:bg-violet-100">
+              Change Plan
+            </Link>
+          </Card>
+        )}
+
+        {/* Redeem Code */}
+        {!loading && !error && (
+          <Card className="mt-6">
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Redeem Code</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Enter promo code"
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+              />
+              <Button onClick={handleRedeem} loading={redeeming}>
+                Redeem
+              </Button>
+            </div>
+            {promoMessage && (
+              <p className={`mt-2 text-sm ${promoMessage.type === "success" ? "text-emerald-600" : "text-red-600"}`}>
+                {promoMessage.text}
+              </p>
+            )}
           </Card>
         )}
       </main>

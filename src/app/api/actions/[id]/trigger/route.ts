@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseServerClient, getAuthenticatedClient } from '@/lib/supabase-server';
 import { createGitHubBridge } from '@/lib/github-bridge';
+import { checkRunLimit, recordRun } from '@/lib/usage-tracker';
 
 /**
  * POST /api/actions/[id]/trigger
@@ -72,6 +73,21 @@ export async function POST(
       );
     }
 
+    // Check run limit before triggering
+    try {
+      const serviceClient = getSupabaseServerClient();
+      const runCheck = await checkRunLimit(serviceClient, userId);
+      if (!runCheck.allowed) {
+        return NextResponse.json(
+          { error: 'Monthly run limit reached', current: runCheck.current, limit: runCheck.limit, resetDate: runCheck.resetDate },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // If usage tracking fails, allow the trigger (graceful degradation)
+      console.error('Usage tracking unavailable, allowing trigger');
+    }
+
     const bridge = createGitHubBridge();
     try {
       await bridge.triggerWorkflow(userId, id);
@@ -81,6 +97,14 @@ export async function POST(
         { error: 'GitHub operation failed', details: message },
         { status: 502 }
       );
+    }
+
+    // Record the run after successful trigger
+    try {
+      const serviceClient = getSupabaseServerClient();
+      await recordRun(serviceClient, id, userId);
+    } catch {
+      console.error('Failed to record run');
     }
 
     return NextResponse.json({ message: 'Workflow triggered successfully' });

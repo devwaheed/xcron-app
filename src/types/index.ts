@@ -26,3 +26,29 @@ export interface Action {
   updatedAt: string;
   userId: string;
 }
+
+export interface Plan {
+  id: number;
+  name: string;
+  maxActions: number;
+  maxRunsPerMonth: number;
+  logRetentionDays: number;
+  stripePriceId: string | null;
+  priceCents: number;
+}
+
+export interface UserPlan {
+  userId: string;
+  planId: number;
+  planName: string;
+  billingCycleStart: string;
+  stripeCustomerId: string | null;
+}
+
+export interface UsageStats {
+  planName: string;
+  actions: { used: number; limit: number };
+  runs: { used: number; limit: number };
+  billingCycleReset: string;
+  logRetentionDays: number;
+}

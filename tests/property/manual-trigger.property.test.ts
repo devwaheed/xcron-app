@@ -37,6 +37,12 @@ vi.mock('@/lib/github-bridge', () => ({
   }),
 }));
 
+// Mock usage tracker to always allow (not the focus of these tests)
+vi.mock('@/lib/usage-tracker', () => ({
+  checkRunLimit: vi.fn().mockResolvedValue({ allowed: true, current: 0, limit: 2000 }),
+  recordRun: vi.fn().mockResolvedValue(undefined),
+}));
+
 // ── Generators ──────────────────────────────────────────────────────────────
 
 const IANA_TIMEZONES = [
