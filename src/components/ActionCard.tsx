@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { Action } from "@/types";
+import type { Action, RunEntry } from "@/types";
 import { ClockIcon, PlayIcon, PauseIcon, EditIcon, TrashIcon } from "@/components/icons";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
@@ -48,6 +49,22 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
   const isPaused = action.status === "paused";
   const timeStr = formatTime(action);
   const busy = toggling || triggering;
+  const [lastRun, setLastRun] = useState<RunEntry | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchLastRun() {
+      try {
+        const res = await fetch(`/api/actions/${action.id}/runs?page=1`);
+        if (res.ok) {
+          const runs: RunEntry[] = await res.json();
+          if (!cancelled && runs.length > 0) setLastRun(runs[0]);
+        }
+      } catch { /* non-critical */ }
+    }
+    fetchLastRun();
+    return () => { cancelled = true; };
+  }, [action.id]);
 
   return (
     <div className={`group relative rounded-2xl border border-slate-200/60 bg-white/70 shadow-sm shadow-slate-200/50 backdrop-blur-xl transition-all hover:border-slate-300/80 hover:shadow-md hover:shadow-slate-200/60 ${isPaused ? "opacity-60" : ""}`}>
@@ -92,6 +109,19 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, togg
           })}
         </div>
       </div>
+
+      {/* Last run indicator */}
+      {lastRun && (
+        <div className="flex items-center gap-2 border-t border-slate-100/80 px-5 py-2.5">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${lastRun.status === "success" ? "bg-emerald-500" : "bg-red-500"}`} />
+          <span className={`text-xs font-medium ${lastRun.status === "success" ? "text-emerald-600" : "text-red-600"}`}>
+            {lastRun.status === "success" ? "Last run passed" : "Last run failed"}
+          </span>
+          <span className="ml-auto text-[11px] text-slate-400">
+            {new Date(lastRun.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        </div>
+      )}
 
       {/* Footer — icon-only actions with tooltips */}
       <div className="flex items-center gap-1 border-t border-slate-100/80 px-4 py-2.5">
