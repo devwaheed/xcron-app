@@ -17,6 +17,7 @@ import { useShortcut } from "@/lib/shortcuts";
 import { useTheme } from "@/components/ThemeProvider";
 import type { ThemeMode } from "@/lib/theme";
 import { PlusIcon, AlertTriangleIcon, XCloseIcon, PauseIcon } from "@/components/icons";
+import type { UsageStats } from "@/types";
 
 
 export default function DashboardPage() {
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const [triggeringIds, setTriggeringIds] = useState<Set<string>>(new Set());
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [usage, setUsage] = useState<UsageStats | null>(null);
 
   const cycleTheme = useCallback(() => {
     const order: ThemeMode[] = ["light", "dark", "system"];
@@ -75,6 +77,10 @@ export default function DashboardPage() {
   }, [showToast, router]);
 
   useEffect(() => { fetchActions(); }, [fetchActions]);
+
+  useEffect(() => {
+    fetch("/api/usage").then(r => r.ok ? r.json() : null).then(d => { if (d) setUsage(d); }).catch(() => {});
+  }, []);
 
   async function handleToggle(id: string) {
     setTogglingIds((prev) => new Set(prev).add(id));
@@ -175,7 +181,7 @@ export default function DashboardPage() {
 
       {/* Stats bar */}
       {!loading && actions.length > 0 && (
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50">
@@ -213,13 +219,28 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          {usage && (
+            <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-500">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Runs this month</p>
+                  <p className="text-xl font-semibold text-sky-600">{usage.runs.used}<span className="text-sm font-normal text-slate-400">/{usage.runs.limit}</span></p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {loading ? (
         <>
-          <div className="mb-8 grid gap-4 sm:grid-cols-3">
-            {[0, 1, 2].map((i) => (
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
               <div key={i} className="rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-sm shadow-slate-200/50">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />

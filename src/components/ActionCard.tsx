@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Action, RunEntry } from "@/types";
 import { ClockIcon, PlayIcon, PauseIcon, EditIcon, TrashIcon } from "@/components/icons";
+import Sparkline, { calcSuccessRate } from "@/components/Sparkline";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
 const DAY_NAMES = [
@@ -51,19 +52,23 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, onDu
   const timeStr = formatTime(action);
   const busy = toggling || triggering;
   const [lastRun, setLastRun] = useState<RunEntry | null>(null);
+  const [recentRuns, setRecentRuns] = useState<RunEntry[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchLastRun() {
+    async function fetchRuns() {
       try {
         const res = await fetch(`/api/actions/${action.id}/runs?page=1`);
         if (res.ok) {
           const runs: RunEntry[] = await res.json();
-          if (!cancelled && runs.length > 0) setLastRun(runs[0]);
+          if (!cancelled) {
+            setRecentRuns(runs.slice(0, 15));
+            if (runs.length > 0) setLastRun(runs[0]);
+          }
         }
       } catch { /* non-critical */ }
     }
-    fetchLastRun();
+    fetchRuns();
     return () => { cancelled = true; };
   }, [action.id]);
 
@@ -111,16 +116,26 @@ export default function ActionCard({ action, onToggle, onTrigger, onDelete, onDu
         </div>
       </div>
 
-      {/* Last run indicator */}
-      {lastRun && (
-        <div className="flex items-center gap-2 border-t border-slate-100/80 px-5 py-2.5">
-          <span className={`h-2 w-2 shrink-0 rounded-full ${lastRun.status === "success" ? "bg-emerald-500" : "bg-red-500"}`} />
-          <span className={`text-xs font-medium ${lastRun.status === "success" ? "text-emerald-600" : "text-red-600"}`}>
-            {lastRun.status === "success" ? "Last run passed" : "Last run failed"}
-          </span>
-          <span className="ml-auto text-[11px] text-slate-400">
-            {new Date(lastRun.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-          </span>
+      {/* Run sparkline + last run */}
+      {recentRuns.length > 0 && (
+        <div className="border-t border-slate-100/80 px-5 py-3">
+          <div className="flex items-center gap-3">
+            <Sparkline runs={recentRuns} width={100} height={20} />
+            <div className="flex-1 min-w-0">
+              <span className={`text-xs font-semibold ${calcSuccessRate(recentRuns) >= 80 ? "text-emerald-600" : calcSuccessRate(recentRuns) >= 50 ? "text-amber-600" : "text-red-600"}`}>
+                {calcSuccessRate(recentRuns)}%
+              </span>
+              <span className="text-[10px] text-slate-400 ml-1">success</span>
+            </div>
+            {lastRun && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className={`h-1.5 w-1.5 rounded-full ${lastRun.status === "success" ? "bg-emerald-500" : "bg-red-500"}`} />
+                <span className="text-[10px] text-slate-400">
+                  {new Date(lastRun.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

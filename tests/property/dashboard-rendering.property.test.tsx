@@ -95,12 +95,24 @@ describe('Property 2: Dashboard renders all actions with correct data', () => {
           cleanup();
 
           // Mock fetch to return the generated actions
-          vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-            new Response(JSON.stringify(actions), {
+          vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+            const url = typeof input === 'string' ? input : (input as Request).url;
+            if (url.includes('/api/usage')) {
+              return new Response(JSON.stringify({
+                planName: 'Starter', actions: { used: actions.length, limit: 5 },
+                runs: { used: 10, limit: 100 },
+                billingCycleReset: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+                logRetentionDays: 30,
+              }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            }
+            if (url.includes('/runs')) {
+              return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            }
+            return new Response(JSON.stringify(actions), {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
-            })
-          );
+            });
+          });
 
           render(<ThemeProvider><ToastProvider><DashboardPage /></ToastProvider></ThemeProvider>);
 
