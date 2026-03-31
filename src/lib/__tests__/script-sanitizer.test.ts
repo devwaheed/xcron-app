@@ -45,11 +45,11 @@ describe("script-sanitizer", () => {
     expect(result.errors[0]).toContain("maximum size");
   });
 
-  it("strips null bytes from scripts", () => {
-    const result = sanitizeScript('console.log("ok");\x00\x01');
+  it("passes through content unchanged (validation only)", () => {
+    const input = 'console.log("ok");\n\tindented();';
+    const result = sanitizeScript(input);
     expect(result.valid).toBe(true);
-    expect(result.sanitized).not.toContain("\x00");
-    expect(result.sanitized).not.toContain("\x01");
+    expect(result.sanitized).toBe(input);
   });
 
   it("allows fetch and async/await", () => {

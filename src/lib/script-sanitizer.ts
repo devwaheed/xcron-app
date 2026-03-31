@@ -38,12 +38,11 @@ export function sanitizeScript(content: string): SanitizeResult {
     }
   }
 
-  // Strip null bytes and other control characters (except newlines/tabs)
-  const sanitized = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-
+  // Return content as-is — validation only, no transformation.
+  // GitHub Actions sandboxing is the primary security boundary.
   return {
     valid: errors.length === 0,
     errors,
-    sanitized,
+    sanitized: content,
   };
 }
