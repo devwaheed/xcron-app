@@ -98,6 +98,15 @@ export default function DashboardPage() {
     finally { setTriggeringIds((prev) => { const next = new Set(prev); next.delete(id); return next; }); }
   }
 
+  async function handleDuplicate(id: string) {
+    try {
+      const res = await fetch(`/api/actions/${id}/duplicate`, { method: "POST" });
+      if (await handleError(res, "Failed to duplicate job")) return;
+      showToast("Job duplicated successfully");
+      await fetchActions();
+    } catch { handleNetworkFailure("Failed to duplicate job"); }
+  }
+
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -267,6 +276,7 @@ export default function DashboardPage() {
           {actions.map((action) => (
             <ActionCard key={action.id} action={action}
               onToggle={handleToggle} onTrigger={handleTrigger} onDelete={(id) => setDeleteTarget(id)}
+              onDuplicate={handleDuplicate}
               toggling={togglingIds.has(action.id)} triggering={triggeringIds.has(action.id)} />
           ))}
         </div>

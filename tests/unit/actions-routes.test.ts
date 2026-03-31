@@ -106,6 +106,10 @@ function makeRow(overrides: Partial<ActionRow> = {}): ActionRow {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-02T00:00:00Z',
     user_id: TEST_USER_ID,
+    env_vars: null,
+    timeout_minutes: null,
+    max_retries: null,
+    retry_delay_seconds: null,
     ...overrides,
   };
 }
@@ -127,6 +131,10 @@ describe('mapRowToAction', () => {
         timezone: 'America/New_York',
       },
       status: 'active',
+      envVars: {},
+      timeoutMinutes: 5,
+      maxRetries: 0,
+      retryDelaySeconds: 60,
       githubWorkflowId: 42,
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-02T00:00:00Z',

@@ -7,6 +7,7 @@ import type { Action, Schedule } from "@/types";
 import GlassCard from "@/components/GlassCard";
 import ScriptEditor from "@/components/ScriptEditor";
 import SchedulePicker, { getLocalTimezone } from "@/components/SchedulePicker";
+import ActionSettings from "@/components/ActionSettings";
 import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 interface FormErrors {
@@ -38,6 +39,10 @@ export default function EditActionPage() {
   const [schedule, setSchedule] = useState<Schedule>({
     days: [], hour: 9, minute: 0, period: "AM", timezone: getLocalTimezone(),
   });
+  const [envVars, setEnvVars] = useState<Record<string, string>>({});
+  const [timeoutMinutes, setTimeoutMinutes] = useState(5);
+  const [maxRetries, setMaxRetries] = useState(0);
+  const [retryDelaySeconds, setRetryDelaySeconds] = useState(60);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,6 +60,10 @@ export default function EditActionPage() {
         setName(action.name);
         setScript(action.scriptContent);
         setSchedule(action.schedule);
+        setEnvVars(action.envVars ?? {});
+        setTimeoutMinutes(action.timeoutMinutes ?? 5);
+        setMaxRetries(action.maxRetries ?? 0);
+        setRetryDelaySeconds(action.retryDelaySeconds ?? 60);
       } catch { setLoadError(networkErrorMessage("Failed to load action")); }
       finally { setLoading(false); }
     }
@@ -71,7 +80,10 @@ export default function EditActionPage() {
       const res = await fetch(`/api/actions/${actionId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), scriptContent: script, schedule }),
+        body: JSON.stringify({
+          name: name.trim(), scriptContent: script, schedule,
+          envVars, timeoutMinutes, maxRetries, retryDelaySeconds,
+        }),
       });
       if (!res.ok) {
         const apiError = await parseApiResponse(res, "Failed to update action");
@@ -136,11 +148,10 @@ export default function EditActionPage() {
               <h2 className="text-base font-semibold text-slate-900">Basics</h2>
             </div>
             <div>
-              <label htmlFor="action-name" className="mb-1.5 block text-sm font-semibold text-slate-700">Action Name</label>
+              <label htmlFor="action-name" className="mb-1.5 block text-sm font-semibold text-slate-700">Job Name</label>
               <input id="action-name" type="text" value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Daily Report, Cleanup Script"
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
-              <p className="mt-1.5 text-xs text-slate-500">A short, descriptive name for your scheduled action</p>
               {errors.name && <p className="mt-1.5 text-sm text-red-500">{errors.name}</p>}
             </div>
           </GlassCard>
@@ -166,6 +177,13 @@ export default function EditActionPage() {
             {errors.days && <p className="mt-1.5 text-sm text-red-500">{errors.days}</p>}
             {errors.time && <p className="mt-1.5 text-sm text-red-500">{errors.time}</p>}
           </GlassCard>
+
+          <ActionSettings
+            envVars={envVars} onEnvVarsChange={setEnvVars}
+            timeoutMinutes={timeoutMinutes} onTimeoutChange={setTimeoutMinutes}
+            maxRetries={maxRetries} onMaxRetriesChange={setMaxRetries}
+            retryDelaySeconds={retryDelaySeconds} onRetryDelayChange={setRetryDelaySeconds}
+          />
 
           <div className="flex justify-end">
             <button type="submit" disabled={submitting}

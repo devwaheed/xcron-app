@@ -20,6 +20,10 @@ export interface Action {
   scriptContent: string;
   schedule: Schedule;
   status: 'active' | 'paused';
+  envVars: Record<string, string>;
+  timeoutMinutes: number;
+  maxRetries: number;
+  retryDelaySeconds: number;
   githubWorkflowId?: number;
   cronJobId?: number;
   createdAt: string;

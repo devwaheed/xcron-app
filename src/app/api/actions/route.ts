@@ -77,11 +77,31 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, scriptContent, schedule } = body as {
+    const { name, scriptContent, schedule, envVars, timeoutMinutes, maxRetries, retryDelaySeconds } = body as {
       name?: string;
       scriptContent?: string;
       schedule?: Schedule;
+      envVars?: Record<string, string>;
+      timeoutMinutes?: number;
+      maxRetries?: number;
+      retryDelaySeconds?: number;
     };
+
+    // Validate env vars
+    const safeEnvVars: Record<string, string> = {};
+    if (envVars && typeof envVars === 'object') {
+      const entries = Object.entries(envVars);
+      if (entries.length > 20) {
+        return NextResponse.json({ error: 'Maximum 20 environment variables allowed' }, { status: 400 });
+      }
+      for (const [k, v] of entries) {
+        if (typeof k === 'string' && typeof v === 'string') safeEnvVars[k] = v;
+      }
+    }
+
+    const safeTimeout = Math.min(30, Math.max(1, timeoutMinutes ?? 5));
+    const safeRetries = Math.min(3, Math.max(0, maxRetries ?? 0));
+    const safeRetryDelay = Math.min(900, Math.max(0, retryDelaySeconds ?? 60));
 
     // Basic field presence checks
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -135,6 +155,10 @@ export async function POST(request: NextRequest) {
       scriptContent: cleanScript,
       schedule,
       status: 'active',
+      envVars: safeEnvVars,
+      timeoutMinutes: safeTimeout,
+      maxRetries: safeRetries,
+      retryDelaySeconds: safeRetryDelay,
       createdAt: now,
       updatedAt: now,
       userId,
@@ -184,6 +208,10 @@ export async function POST(request: NextRequest) {
         status: 'active',
         cron_job_id: cronJobId ?? null,
         user_id: userId,
+        env_vars: safeEnvVars,
+        timeout_minutes: safeTimeout,
+        max_retries: safeRetries,
+        retry_delay_seconds: safeRetryDelay,
       })
       .select('*')
       .single();

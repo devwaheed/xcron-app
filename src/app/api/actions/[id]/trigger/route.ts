@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getSupabaseServerClient, getAuthenticatedClient } from '@/lib/supabase-server';
 import { createGitHubBridge } from '@/lib/github-bridge';
 import { checkRunLimit, recordRun } from '@/lib/usage-tracker';
+import { sendJobFailureAlert } from '@/lib/email';
 
 /**
  * POST /api/actions/[id]/trigger

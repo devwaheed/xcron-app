@@ -7,6 +7,7 @@ import type { Schedule } from "@/types";
 import GlassCard from "@/components/GlassCard";
 import ScriptEditor from "@/components/ScriptEditor";
 import SchedulePicker, { getLocalTimezone } from "@/components/SchedulePicker";
+import ActionSettings from "@/components/ActionSettings";
 import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
 interface FormErrors {
@@ -41,6 +42,10 @@ export default function NewActionPage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [envVars, setEnvVars] = useState<Record<string, string>>({});
+  const [timeoutMinutes, setTimeoutMinutes] = useState(5);
+  const [maxRetries, setMaxRetries] = useState(0);
+  const [retryDelaySeconds, setRetryDelaySeconds] = useState(60);
   const [actionSlots, setActionSlots] = useState<{ used: number; limit: number } | null>(null);
   const [atLimit, setAtLimit] = useState(false);
 
@@ -77,7 +82,10 @@ export default function NewActionPage() {
       const res = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), scriptContent: script, schedule }),
+        body: JSON.stringify({
+          name: name.trim(), scriptContent: script, schedule,
+          envVars, timeoutMinutes, maxRetries, retryDelaySeconds,
+        }),
       });
       if (!res.ok) {
         const apiError = await parseApiResponse(res, "Failed to create action");
@@ -165,6 +173,13 @@ export default function NewActionPage() {
             {errors.days && <p className="mt-1.5 text-sm text-red-500">{errors.days}</p>}
             {errors.time && <p className="mt-1.5 text-sm text-red-500">{errors.time}</p>}
           </GlassCard>
+
+          <ActionSettings
+            envVars={envVars} onEnvVarsChange={setEnvVars}
+            timeoutMinutes={timeoutMinutes} onTimeoutChange={setTimeoutMinutes}
+            maxRetries={maxRetries} onMaxRetriesChange={setMaxRetries}
+            retryDelaySeconds={retryDelaySeconds} onRetryDelayChange={setRetryDelaySeconds}
+          />
 
           <div className="flex justify-end">
             <button type="submit" disabled={submitting}
