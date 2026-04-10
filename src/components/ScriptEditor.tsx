@@ -5,7 +5,8 @@ import { EditorView, keymap, placeholder as cmPlaceholder, lineNumbers, highligh
 import { EditorState } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
-import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter } from "@codemirror/language";
+import { syntaxHighlighting, HighlightStyle, bracketMatching, foldGutter } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 import { closeBrackets } from "@codemirror/autocomplete";
 
 interface ScriptEditorProps {
@@ -65,6 +66,34 @@ const appTheme = EditorView.theme({
   },
 });
 
+/* Custom syntax highlighting with good contrast on light bg */
+const highlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "#8b5cf6" },              // violet — if, const, await, return
+  { tag: tags.controlKeyword, color: "#8b5cf6" },
+  { tag: tags.definitionKeyword, color: "#8b5cf6" },
+  { tag: tags.operatorKeyword, color: "#8b5cf6" },
+  { tag: tags.string, color: "#059669" },                // emerald — "strings"
+  { tag: tags.number, color: "#d97706" },                // amber — 42, 3.14
+  { tag: tags.bool, color: "#d97706" },                  // amber — true, false
+  { tag: tags.null, color: "#d97706" },                  // amber — null, undefined
+  { tag: tags.comment, color: "#94a3b8", fontStyle: "italic" }, // slate — // comments
+  { tag: tags.lineComment, color: "#94a3b8", fontStyle: "italic" },
+  { tag: tags.blockComment, color: "#94a3b8", fontStyle: "italic" },
+  { tag: tags.variableName, color: "#1e293b" },          // dark slate — variables
+  { tag: tags.definition(tags.variableName), color: "#0369a1" }, // sky — variable definitions
+  { tag: tags.function(tags.variableName), color: "#7c3aed" },  // violet — function calls
+  { tag: tags.propertyName, color: "#0369a1" },          // sky — object.property
+  { tag: tags.typeName, color: "#0891b2" },              // cyan — type names
+  { tag: tags.className, color: "#0891b2" },
+  { tag: tags.punctuation, color: "#475569" },           // slate-600 — { } ( ) [ ] ; ,
+  { tag: tags.bracket, color: "#475569" },
+  { tag: tags.operator, color: "#475569" },              // = + - * / etc
+  { tag: tags.regexp, color: "#e11d48" },                // rose — /regex/
+  { tag: tags.tagName, color: "#7c3aed" },
+  { tag: tags.attributeName, color: "#0369a1" },
+  { tag: tags.meta, color: "#64748b" },
+]);
+
 export default function ScriptEditor({ value, onChange }: ScriptEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -92,7 +121,7 @@ export default function ScriptEditor({ value, onChange }: ScriptEditorProps) {
         bracketMatching(),
         closeBrackets(),
         javascript(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        syntaxHighlighting(highlightStyle, { fallback: true }),
         keymap.of([...defaultKeymap, indentWithTab]),
         cmPlaceholder("Paste your JavaScript code here…"),
         appTheme,
