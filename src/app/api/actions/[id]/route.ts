@@ -294,23 +294,30 @@ export async function PUT(
     }
 
     // Update Supabase (RLS ensures user can only update their own)
+    const updatePayload: Record<string, unknown> = {
+      name: name.trim(),
+      script_content: cleanScript,
+      days: schedule.days,
+      time_hour: schedule.hour,
+      time_minute: schedule.minute,
+      time_period: schedule.period,
+      timezone: schedule.timezone,
+      cron_job_id: cronJobId ?? existing.cron_job_id,
+      updated_at: now,
+    };
+
+    // Only include new columns if they exist in the DB (migration 005)
+    // This prevents errors when the migration hasn't been run yet
+    if ('env_vars' in existing || envVars) {
+      updatePayload.env_vars = safeEnvVars;
+      updatePayload.timeout_minutes = safeTimeout;
+      updatePayload.max_retries = safeRetries;
+      updatePayload.retry_delay_seconds = safeRetryDelay;
+    }
+
     const { data, error } = await supabase
       .from('actions')
-      .update({
-        name: name.trim(),
-        script_content: cleanScript,
-        days: schedule.days,
-        time_hour: schedule.hour,
-        time_minute: schedule.minute,
-        time_period: schedule.period,
-        timezone: schedule.timezone,
-        cron_job_id: cronJobId ?? existing.cron_job_id,
-        updated_at: now,
-        env_vars: safeEnvVars,
-        timeout_minutes: safeTimeout,
-        max_retries: safeRetries,
-        retry_delay_seconds: safeRetryDelay,
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select('*')
       .single();

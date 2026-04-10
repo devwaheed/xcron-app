@@ -18,7 +18,7 @@ const BLOCKED_PATTERNS: { pattern: RegExp; message: string }[] = [
   { pattern: /child_process/i, message: "child_process module is not allowed" },
   { pattern: /require\s*\(\s*['"]fs['"]\s*\)/i, message: "Direct fs module access is not allowed — use fetch for I/O" },
   { pattern: /eval\s*\(/i, message: "eval() is not allowed" },
-  { pattern: /Function\s*\(/i, message: "Function constructor is not allowed" },
+  { pattern: /\bnew\s+Function\s*\(/i, message: "Function constructor is not allowed" },
 ];
 
 export function sanitizeScript(content: string): SanitizeResult {

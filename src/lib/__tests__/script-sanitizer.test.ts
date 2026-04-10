@@ -33,9 +33,14 @@ describe("script-sanitizer", () => {
   });
 
   it("rejects Function constructor", () => {
-    const result = sanitizeScript('new Function("return 1")()');
+    const result = sanitizeScript('const fn = new Function("return 1")()');
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain("Function constructor");
+  });
+
+  it("allows methods ending in Function like waitForFunction", () => {
+    const result = sanitizeScript('await page.waitForFunction(() => true);');
+    expect(result.valid).toBe(true);
   });
 
   it("rejects scripts over 50KB", () => {

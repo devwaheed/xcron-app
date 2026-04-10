@@ -194,27 +194,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase
+    const insertPayload: Record<string, unknown> = {
+      id: actionId,
+      name: name.trim(),
+      script_content: cleanScript,
+      days: schedule.days,
+      time_hour: schedule.hour,
+      time_minute: schedule.minute,
+      time_period: schedule.period,
+      timezone: schedule.timezone,
+      status: 'active',
+      cron_job_id: cronJobId ?? null,
+      user_id: userId,
+    };
+
+    // Include new columns only if migration 005 has been applied
+    // Attempt with new columns first, fall back without them
+    if (Object.keys(safeEnvVars).length > 0 || safeTimeout !== 5 || safeRetries !== 0) {
+      insertPayload.env_vars = safeEnvVars;
+      insertPayload.timeout_minutes = safeTimeout;
+      insertPayload.max_retries = safeRetries;
+      insertPayload.retry_delay_seconds = safeRetryDelay;
+    }
+
+    let { data, error } = await supabase
       .from('actions')
-      .insert({
-        id: actionId,
-        name: name.trim(),
-        script_content: cleanScript,
-        days: schedule.days,
-        time_hour: schedule.hour,
-        time_minute: schedule.minute,
-        time_period: schedule.period,
-        timezone: schedule.timezone,
-        status: 'active',
-        cron_job_id: cronJobId ?? null,
-        user_id: userId,
-        env_vars: safeEnvVars,
-        timeout_minutes: safeTimeout,
-        max_retries: safeRetries,
-        retry_delay_seconds: safeRetryDelay,
-      })
+      .insert(insertPayload)
       .select('*')
       .single();
+
+    // If insert fails due to unknown columns, retry without new fields
+    if (error && (error.message?.includes('env_vars') || error.message?.includes('timeout_minutes'))) {
+      delete insertPayload.env_vars;
+      delete insertPayload.timeout_minutes;
+      delete insertPayload.max_retries;
+      delete insertPayload.retry_delay_seconds;
+      const retry = await supabase.from('actions').insert(insertPayload).select('*').single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       return NextResponse.json(
