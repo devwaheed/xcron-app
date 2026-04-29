@@ -46,9 +46,9 @@ describe('PricingPage', () => {
   it('displays correct action limits', async () => {
     render(<PricingPage />);
 
-    expect(screen.getAllByText('5 scheduled actions').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('15 scheduled actions').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('50 scheduled actions').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('5 scheduled jobs').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('15 scheduled jobs').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('50 scheduled jobs').length).toBeGreaterThan(0);
   });
 
   it('shows "Most Popular" badge on Pro tier', () => {
@@ -103,8 +103,8 @@ describe('PricingPage', () => {
     render(<PricingPage />);
 
     expect(screen.getByText('Feature')).toBeTruthy();
-    expect(screen.getAllByText('Scheduled actions').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Scheduled jobs').length).toBeGreaterThan(0);
     expect(screen.getByText('Runs per month')).toBeTruthy();
-    expect(screen.getByText('Log retention')).toBeTruthy();
+    expect(screen.getByText('History')).toBeTruthy();
   });
 });

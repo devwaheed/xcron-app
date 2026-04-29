@@ -21,7 +21,7 @@ const PLANS = [
       "5 scheduled jobs",
       "100 runs per month",
       "30-day history",
-      "Email alerts",
+      "Email support",
     ],
   },
   {
@@ -92,14 +92,14 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
-            Put your tasks{" "}
+            Automate any URL call{" "}
             <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent">
-              on autopilot
+              on your schedule
             </span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500 sm:text-xl">
-            Schedule HTTP requests, monitor websites, send reports, and automate workflows. Pick a time, set it, forget it. No coding required — or bring your own scripts.
+            Paste a URL, pick a time, done. Monitor uptime, trigger webhooks, send reports — all running automatically. No servers to manage, no code required.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -107,7 +107,7 @@ export default function LandingPage() {
               href="/login"
               className="inline-flex h-12 items-center rounded-full bg-slate-900 px-8 text-base font-semibold text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-900/15"
             >
-              Start automating
+              Schedule your first job
               <svg className="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
@@ -135,8 +135,8 @@ export default function LandingPage() {
             </div>
             <div className="bg-slate-50 p-6">
               <div className="mb-4 flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-700">Your Actions</div>
-                <div className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white">+ New Action</div>
+                <div className="text-sm font-medium text-slate-700">Your Jobs</div>
+                <div className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white">+ New Job</div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
@@ -170,10 +170,10 @@ export default function LandingPage() {
         <ScrollReveal>
         <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-slate-100 sm:grid-cols-4">
           {[
-            { value: "Zero", label: "Servers to manage" },
-            { value: "24/7", label: "Automated execution" },
-            { value: "99.9%", label: "Uptime reliability" },
-            { value: "<1min", label: "Setup time" },
+            { value: "No code", label: "Just paste a URL" },
+            { value: "60sec", label: "To set up your first job" },
+            { value: "Auto-retry", label: "On every failure" },
+            { value: "Alerts", label: "Email on failure" },
           ].map((stat) => (
             <div key={stat.label} className="px-6 py-12 text-center sm:py-16">
               <div className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
@@ -238,8 +238,8 @@ export default function LandingPage() {
           <ScrollReveal delay={100} className="h-full">
           <FeatureCard
             icon={<CodeIcon size={20} />}
-            title="Custom Scripts"
-            description="Need more power? Write JavaScript for complex automations — data processing, multi-step workflows, anything."
+            title="Inline Code Editor"
+            description="Write and edit scripts directly in the browser with syntax highlighting, auto-complete, and instant deploy. No file uploads, no CLI — just code and save."
             color="rose"
           />
           </ScrollReveal>
@@ -389,7 +389,7 @@ export default function LandingPage() {
 
           <ScrollReveal delay={350}>
             <p className="mt-10 text-center text-sm text-slate-400">
-              All plans include encrypted execution, automatic retries, and email alerts. Have a promo code? Enter it during signup.
+              All plans include encrypted execution, automatic retries, and email alerts. Pay once, use forever — your jobs keep running as long as you need them. Have a promo code? Enter it during signup.
             </p>
           </ScrollReveal>
         </div>
@@ -406,9 +406,9 @@ export default function LandingPage() {
           </ScrollReveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { name: "Sarah K.", role: "E-commerce Manager", quote: "I set up uptime monitoring for our Shopify store in 2 minutes. No code, just pasted the URL and picked a schedule. It's been running flawlessly for months." },
-              { name: "Marcus T.", role: "Freelance Developer", quote: "I used to manage cron jobs on a VPS. xCron replaced all of that — scheduled API calls, database cleanups, report generation. Saves me hours every week." },
-              { name: "Priya R.", role: "Marketing Lead", quote: "We use it to trigger our analytics pipeline every morning. The failure alerts caught a broken API endpoint before our team even noticed." },
+              { name: "Sarah K.", role: "E-commerce Manager", handle: "@sarahk_shop", quote: "I set up uptime monitoring for our Shopify store in 2 minutes. No code, just pasted the URL and picked a schedule. It's been running flawlessly." },
+              { name: "Marcus T.", role: "Freelance Developer", handle: "@marcust_dev", quote: "I used to manage cron jobs on a VPS. xCron replaced all of that — scheduled API calls, cleanups, report generation. Saves me hours every week." },
+              { name: "Priya R.", role: "Marketing Lead", handle: "@priya_ops", quote: "We trigger our analytics pipeline every morning. The failure alerts caught a broken endpoint before our team even noticed. Worth every penny." },
             ].map((t, i) => (
               <ScrollReveal key={i} delay={i * 100}>
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -426,7 +426,7 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-800">{t.name}</p>
-                      <p className="text-xs text-slate-400">{t.role}</p>
+                      <p className="text-xs text-slate-400">{t.role} · {t.handle}</p>
                     </div>
                   </div>
                 </div>

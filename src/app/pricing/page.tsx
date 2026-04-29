@@ -11,10 +11,10 @@ const PLANS = [
     description: "Perfect for side projects and trying things out.",
     price: "$49",
     features: [
-      "5 scheduled actions",
+      "5 scheduled jobs",
       "100 runs per month",
-      "30-day log retention",
-      "Community support",
+      "30-day history",
+      "Email support",
     ],
   },
   {
@@ -24,9 +24,9 @@ const PLANS = [
     price: "$99",
     popular: true,
     features: [
-      "15 scheduled actions",
+      "15 scheduled jobs",
       "500 runs per month",
-      "90-day log retention",
+      "90-day history",
       "Priority support",
     ],
   },
@@ -36,9 +36,9 @@ const PLANS = [
     description: "For teams running production workloads at scale.",
     price: "$199",
     features: [
-      "50 scheduled actions",
+      "50 scheduled jobs",
       "2,000 runs per month",
-      "1-year log retention",
+      "1-year history",
       "Dedicated support",
     ],
   },
@@ -239,9 +239,9 @@ export default function PricingPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {[
-                  { label: "Scheduled actions", values: ["5", "15", "50"] },
+                  { label: "Scheduled jobs", values: ["5", "15", "50"] },
                   { label: "Runs per month", values: ["100", "500", "2,000"] },
-                  { label: "Log retention", values: ["30 days", "90 days", "1 year"] },
+                  { label: "History", values: ["30 days", "90 days", "1 year"] },
                   { label: "Price", values: ["$49", "$99", "$199"] },
                 ].map((row) => (
                   <tr key={row.label}>
