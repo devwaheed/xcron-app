@@ -7,47 +7,48 @@ const SECTIONS = [
     id: "getting-started",
     title: "Getting Started",
     content: [
-      { q: "What is xCron?", a: "xCron is a scheduled job platform that lets you write JavaScript scripts and run them automatically on a schedule. Your scripts execute via GitHub Actions, with scheduling powered by cron-job.org for reliability." },
-      { q: "How do I create my first job?", a: "Sign up, go to your dashboard, and click \"New Job\". Give it a name, paste your JavaScript code, pick the days and time you want it to run, and hit Create. That's it — your script will run on schedule." },
-      { q: "What can I automate?", a: "Anything Node.js can do: HTTP health checks, API calls, data processing, sending notifications, database maintenance, web scraping, report generation, and more." },
+      { q: "What is xCron?", a: "xCron is a scheduled automation platform. Create jobs that run on a timer — call URLs, monitor websites, trigger webhooks, or run custom scripts. Everything runs in the cloud, fully managed." },
+      { q: "How do I create my first job?", a: "Sign up, go to your dashboard, and click \"New Job\". Choose HTTP Request (no code) or Custom Script, set your schedule, and hit Create. Your job will start running automatically." },
+      { q: "What can I automate?", a: "Website uptime monitoring, API health checks, webhook triggers, report generation, data backups, Slack/Discord notifications, email reminders, and any custom workflow you can think of." },
+      { q: "Do I need to know how to code?", a: "No. The HTTP Request mode lets you schedule URL calls without any coding. Just paste a URL, pick a method (GET, POST, etc.), and set your schedule. For advanced use cases, you can write JavaScript." },
+    ],
+  },
+  {
+    id: "http-requests",
+    title: "HTTP Request Jobs",
+    content: [
+      { q: "How do HTTP request jobs work?", a: "You provide a URL, choose an HTTP method (GET, POST, PUT, etc.), and optionally add headers and a request body. xCron calls that URL on your schedule and logs the response." },
+      { q: "Can I add authentication headers?", a: "Yes. Add any custom headers like Authorization, API keys, or Bearer tokens. Headers are stored securely and sent with every request." },
+      { q: "What if the request fails?", a: "Failed requests (non-2xx responses) are logged with the full response. You can configure automatic retries (1-3 attempts) and get email alerts on failure." },
+      { q: "Can I send POST data?", a: "Yes. For POST, PUT, and PATCH requests, you can include a request body (JSON, form data, or plain text). Add a Content-Type header to match your payload." },
     ],
   },
   {
     id: "scripts",
-    title: "Writing Scripts",
+    title: "Custom Scripts",
     content: [
-      { q: "What language do scripts use?", a: "JavaScript (Node.js). Your script runs in a GitHub Actions environment with full Node.js support. You can use fetch(), async/await, and any built-in Node.js modules." },
-      { q: "Can I use npm packages?", a: "The default environment includes Node.js built-ins. For external packages, you can use dynamic imports or include the package code directly in your script." },
-      { q: "Are there any restrictions?", a: "For security, scripts cannot use eval(), the Function constructor, child_process, or reference server secrets. Scripts are limited to 50KB. These restrictions protect the platform and other users." },
-      { q: "How do I handle errors?", a: "Use try/catch blocks in your script. If your script throws an unhandled error, the run will be marked as failed and you'll see the error in your run history." },
+      { q: "What language do scripts use?", a: "JavaScript. Your scripts run in a secure cloud environment with full Node.js support. You can use fetch(), async/await, and built-in modules." },
+      { q: "Are there any restrictions?", a: "For security, scripts cannot access the host system or reference platform credentials. Scripts are limited to 50KB. These restrictions protect all users on the platform." },
+      { q: "How do I handle errors?", a: "Use try/catch blocks. If your script throws an unhandled error, the run is marked as failed and you'll see the error in your run history." },
+      { q: "Can I use environment variables?", a: "Yes. Each job can have up to 20 key-value environment variables. They're injected at runtime — great for API keys, config values, and secrets." },
     ],
   },
   {
     id: "scheduling",
     title: "Scheduling",
     content: [
-      { q: "How does scheduling work?", a: "Pick any combination of days (Monday through Sunday), set a time, and choose your timezone. xCron generates the cron expression and sets up both GitHub Actions and cron-job.org for reliable execution." },
-      { q: "What timezones are supported?", a: "All IANA timezones are supported. Your profile timezone is used as the default, but each job can have its own timezone." },
-      { q: "Can I run a job manually?", a: "Yes. Every job card has a \"Run Now\" button that triggers immediate execution via GitHub workflow dispatch." },
-      { q: "How reliable is the scheduling?", a: "We use dual scheduling — GitHub Actions cron and cron-job.org — for redundancy. If one system has a delay, the other ensures your job runs on time." },
+      { q: "How does scheduling work?", a: "Pick any combination of days (Monday through Sunday), set a time, and choose your timezone. xCron handles the rest — your job runs automatically at the specified time." },
+      { q: "What timezones are supported?", a: "All major timezones worldwide. Your profile timezone is used as the default, but each job can have its own timezone." },
+      { q: "Can I run a job manually?", a: "Yes. Every job has a \"Run Now\" button for immediate execution, regardless of the schedule." },
     ],
   },
   {
     id: "plans",
-    title: "Plans & Limits",
+    title: "Plans & Billing",
     content: [
-      { q: "What are the plan limits?", a: "Starter: 5 jobs, 100 runs/month. Pro: 15 jobs, 500 runs/month. Business: 50 jobs, 2,000 runs/month. Each tier also includes different log retention periods." },
+      { q: "What are the plan limits?", a: "Starter: 5 jobs, 100 runs/month. Pro: 15 jobs, 500 runs/month. Business: 50 jobs, 2,000 runs/month. Each tier includes different history retention periods." },
       { q: "What happens when I hit a limit?", a: "You'll see a warning in your dashboard. You won't be able to create new jobs or trigger runs beyond your limit. Upgrade your plan or wait for the monthly reset." },
-      { q: "How do promo codes work?", a: "Enter a promo code during signup or in the Billing & Usage section of your dashboard. Valid codes instantly upgrade your plan." },
-    ],
-  },
-  {
-    id: "self-hosting",
-    title: "Self-Hosting",
-    content: [
-      { q: "Can I self-host xCron?", a: "Yes. xCron is designed to be self-hostable. You'll need a Supabase project, a GitHub repository for script storage, and optionally a cron-job.org account for reliable scheduling." },
-      { q: "What do I need to set up?", a: "1) Clone the repo. 2) Create a Supabase project and run the migrations. 3) Create a GitHub repo for scripts. 4) Set up your environment variables. 5) Deploy to Vercel or any Node.js host." },
-      { q: "What environment variables are required?", a: "SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, GITHUB_REPO_OWNER, GITHUB_REPO_NAME, GITHUB_PAT, CRONJOB_API_KEY, and CRON_SECRET. Optional: RESEND_API_KEY for emails, STRIPE keys for payments." },
+      { q: "How do promo codes work?", a: "Enter a promo code during signup or in the Billing & Usage section. Valid codes instantly upgrade your plan." },
     ],
   },
 ];
@@ -67,12 +68,11 @@ export default function DocsPage() {
       </nav>
 
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <h1 className="text-3xl font-bold text-slate-900">Documentation</h1>
-        <p className="mt-3 text-lg text-slate-500">Everything you need to know about xCron.</p>
+        <h1 className="text-3xl font-bold text-slate-900">Help Center</h1>
+        <p className="mt-3 text-lg text-slate-500">Everything you need to get the most out of xCron.</p>
 
-        {/* Table of contents */}
         <nav className="mt-10 rounded-xl border border-slate-200 bg-slate-50/50 p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">On this page</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Topics</h2>
           <ul className="space-y-2">
             {SECTIONS.map((s) => (
               <li key={s.id}>
@@ -82,7 +82,6 @@ export default function DocsPage() {
           </ul>
         </nav>
 
-        {/* Sections */}
         {SECTIONS.map((section) => (
           <section key={section.id} id={section.id} className="mt-16">
             <h2 className="text-2xl font-bold text-slate-900">{section.title}</h2>

@@ -47,7 +47,7 @@ describe('Form validation rejects incomplete submissions', () => {
       expect(screen.getByText('Name is required')).toBeTruthy();
     });
 
-    expect(screen.getByText('Script is required')).toBeTruthy();
+    expect(screen.getByText('URL is required')).toBeTruthy();
     expect(screen.getByText('At least one day must be selected')).toBeTruthy();
 
     // No API call should have been made for action creation

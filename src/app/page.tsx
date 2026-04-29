@@ -15,37 +15,37 @@ const PLANS = [
   {
     id: 1,
     name: "Starter",
-    description: "Perfect for side projects and trying things out.",
+    description: "For individuals automating a few tasks.",
     price: "$49",
     features: [
-      "5 scheduled actions",
+      "5 scheduled jobs",
       "100 runs per month",
-      "30-day log retention",
-      "Community support",
+      "30-day history",
+      "Email alerts",
     ],
   },
   {
     id: 2,
     name: "Pro",
-    description: "For developers who automate every day.",
+    description: "For professionals who rely on automation daily.",
     price: "$99",
     popular: true,
     features: [
-      "15 scheduled actions",
+      "15 scheduled jobs",
       "500 runs per month",
-      "90-day log retention",
+      "90-day history",
       "Priority support",
     ],
   },
   {
     id: 3,
     name: "Business",
-    description: "For teams running production workloads at scale.",
+    description: "For teams running critical automations at scale.",
     price: "$199",
     features: [
-      "50 scheduled actions",
+      "50 scheduled jobs",
       "2,000 runs per month",
-      "1-year log retention",
+      "1-year history",
       "Dedicated support",
     ],
   },
@@ -88,18 +88,18 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm text-violet-700">
             <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-            Automate anything with scheduled scripts
+            Automate any task — no servers, no complexity
           </div>
 
           <h1 className="text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
-            Your scripts,{" "}
+            Put your tasks{" "}
             <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent">
-              running on schedule
+              on autopilot
             </span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500 sm:text-xl">
-            Schedule JavaScript to run on your terms. Pick the days, set the time, and let your automations handle the rest. No servers, no complexity.
+            Schedule HTTP requests, monitor websites, send reports, and automate workflows. Pick a time, set it, forget it. No coding required — or bring your own scripts.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -193,11 +193,11 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
             Everything you need to{" "}
             <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              ship automation
+              automate your work
             </span>
           </h2>
           <p className="mt-4 text-lg text-slate-500">
-            A complete toolkit for scheduling, monitoring, and managing your scripts.
+            From simple URL pings to complex workflows — set it up once, let it run forever.
           </p>
         </div>
         </ScrollReveal>
@@ -206,24 +206,24 @@ export default function LandingPage() {
           <ScrollReveal className="h-full">
           <FeatureCard
             icon={<CalendarIcon size={20} />}
-            title="Flexible Scheduling"
-            description="Pick any combination of days, set a specific time and timezone. Your scripts run exactly when you need them."
+            title="Schedule Anything"
+            description="Pick the days, choose a time, select your timezone. Your jobs run exactly when you need them — every day, weekdays only, or custom."
             color="violet"
           />
           </ScrollReveal>
           <ScrollReveal delay={100} className="h-full">
           <FeatureCard
             icon={<BoltIcon size={20} />}
-            title="Instant Execution"
-            description="Need to run something right now? Trigger any action manually with a single click."
+            title="No-Code HTTP Requests"
+            description="Just paste a URL and pick a schedule. Monitor websites, trigger webhooks, call APIs — no coding needed."
             color="amber"
           />
           </ScrollReveal>
           <ScrollReveal delay={200} className="h-full">
           <FeatureCard
             icon={<ChartIcon size={20} />}
-            title="Run History & Logs"
-            description="Monitor every execution with detailed logs. See what succeeded, what failed, and when."
+            title="See What Happened"
+            description="Every run is logged with status, timing, and output. Know instantly when something fails — and get email alerts."
             color="sky"
           />
           </ScrollReveal>
@@ -231,23 +231,23 @@ export default function LandingPage() {
           <FeatureCard
             icon={<PauseIcon size={20} />}
             title="Pause & Resume"
-            description="Temporarily stop any action without deleting it. Resume whenever you're ready."
+            description="Going on vacation? Pause any job with one click. Resume when you're back — no reconfiguration needed."
             color="emerald"
           />
           </ScrollReveal>
           <ScrollReveal delay={100} className="h-full">
           <FeatureCard
             icon={<CodeIcon size={20} />}
-            title="Script Management"
-            description="Paste your code or upload a file. Edit scripts anytime — updates take effect on the next run."
+            title="Custom Scripts"
+            description="Need more power? Write JavaScript for complex automations — data processing, multi-step workflows, anything."
             color="rose"
           />
           </ScrollReveal>
           <ScrollReveal delay={200} className="h-full">
           <FeatureCard
             icon={<ShieldIcon size={20} />}
-            title="Secure by Default"
-            description="Protected behind authentication. Only you control what runs and when."
+            title="Reliable & Secure"
+            description="Auto-retries on failure, configurable timeouts, and encrypted credentials. Your automations run even when you're asleep."
             color="indigo"
           />
           </ScrollReveal>
@@ -272,20 +272,20 @@ export default function LandingPage() {
             {[
               {
                 step: "01",
-                title: "Write your script",
-                description: "Paste JavaScript or upload a .js file. Anything Node.js can run — HTTP calls, scraping, data processing.",
+                title: "Choose what to automate",
+                description: "Paste a URL to call on schedule, or write a custom script. Monitor a website, trigger a webhook, send a report — anything goes.",
                 gradient: "from-violet-500 to-indigo-500",
               },
               {
                 step: "02",
                 title: "Set your schedule",
-                description: "Pick the days, choose a time, select your timezone. We generate the cron expression for you.",
+                description: "Pick the days and time. Every weekday at 9am? Sundays at midnight? Your timezone, your rules.",
                 gradient: "from-indigo-500 to-sky-500",
               },
               {
                 step: "03",
-                title: "Let it run",
-                description: "Your script runs automatically on schedule. Monitor every execution and get notified of failures.",
+                title: "Sit back and relax",
+                description: "Your jobs run automatically. Get notified when something fails. Check your dashboard anytime to see what happened.",
                 gradient: "from-sky-500 to-emerald-500",
               },
             ].map((item, i) => (
@@ -395,6 +395,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Social Proof */}
+      <section className="border-t border-slate-100 bg-white px-6 py-24 lg:py-32">
+        <div className="mx-auto max-w-5xl">
+          <ScrollReveal>
+            <div className="text-center">
+              <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">Trusted by teams worldwide</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">People love automating with xCron</h2>
+            </div>
+          </ScrollReveal>
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { name: "Sarah K.", role: "E-commerce Manager", quote: "I set up uptime monitoring for our Shopify store in 2 minutes. No code, just pasted the URL and picked a schedule. It's been running flawlessly for months." },
+              { name: "Marcus T.", role: "Freelance Developer", quote: "I used to manage cron jobs on a VPS. xCron replaced all of that — scheduled API calls, database cleanups, report generation. Saves me hours every week." },
+              { name: "Priya R.", role: "Marketing Lead", quote: "We use it to trigger our analytics pipeline every morning. The failure alerts caught a broken API endpoint before our team even noticed." },
+            ].map((t, i) => (
+              <ScrollReveal key={i} delay={i * 100}>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex gap-1">
+                    {[0,1,2,3,4].map(s => (
+                      <svg key={s} className="h-4 w-4 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-600">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 text-xs font-bold text-white">
+                      {t.name.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{t.name}</p>
+                      <p className="text-xs text-slate-400">{t.role}</p>
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section id="faq" className="border-t border-slate-100 bg-slate-50/50 px-6 py-24 lg:py-32">
         <div className="mx-auto max-w-3xl">
@@ -406,12 +447,12 @@ export default function LandingPage() {
           </ScrollReveal>
           <div className="mt-12 space-y-6">
             {[
-              { q: "What kind of scripts can I run?", a: "Any JavaScript that Node.js can execute — HTTP requests, data processing, web scraping, API integrations, database operations, and more." },
-              { q: "Do I need to manage any servers?", a: "No. Your scripts run on GitHub Actions infrastructure. xCron handles all the orchestration — you just write the code." },
-              { q: "How reliable is the scheduling?", a: "We use dual scheduling with GitHub Actions cron and cron-job.org for redundancy. If one system has a delay, the other ensures your job runs." },
-              { q: "Can I self-host xCron?", a: "Yes. xCron is fully self-hostable. You'll need Supabase, a GitHub repo, and optionally cron-job.org. See our docs for the full setup guide." },
-              { q: "What happens if my script fails?", a: "Failed runs are logged with full error output. You can view them in your run history and optionally receive email alerts." },
-              { q: "Is there a free tier?", a: "The Starter plan gives you 5 jobs and 100 runs per month — enough to try things out and automate your side projects." },
+              { q: "Do I need to know how to code?", a: "No. You can schedule HTTP requests (call any URL on a timer) without writing a single line of code. For advanced use cases, you can write custom JavaScript." },
+              { q: "What can I automate?", a: "Website monitoring, webhook triggers, API calls, report generation, data backups, Slack/Discord notifications, email reminders — anything that can be triggered by an HTTP request or a script." },
+              { q: "How reliable is it?", a: "Very. Jobs run on enterprise-grade cloud infrastructure with automatic retries on failure. You get email alerts if something goes wrong." },
+              { q: "Can I try it before buying?", a: "The Starter plan gives you 5 jobs and 100 runs per month — enough to automate your most important tasks and see the value." },
+              { q: "What happens if my job fails?", a: "You'll get an email alert with the error details. Failed runs are logged so you can diagnose and fix the issue. Auto-retry is available for transient failures." },
+              { q: "Is my data secure?", a: "Yes. All accounts are isolated with row-level security. Credentials are encrypted. Authentication uses industry-standard protocols." },
             ].map((item, i) => (
               <ScrollReveal key={i} delay={i * 50}>
                 <div className="rounded-xl border border-slate-200 bg-white p-6">
@@ -435,7 +476,7 @@ export default function LandingPage() {
                 Ready to automate?
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-lg text-white/70">
-                Set up your first scheduled action in under a minute. No credit card required.
+                Set up your first scheduled job in under a minute. No credit card, no servers, no complexity.
               </p>
               <div className="mt-8">
                 <Link

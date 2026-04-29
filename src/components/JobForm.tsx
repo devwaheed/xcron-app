@@ -8,7 +8,12 @@ import ActionSettings from "@/components/ActionSettings";
 
 export interface JobFormData {
   name: string;
+  jobType: "script" | "webhook";
   script: string;
+  webhookUrl: string;
+  webhookMethod: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  webhookHeaders: Record<string, string>;
+  webhookBody: string;
   schedule: Schedule;
   envVars: Record<string, string>;
   timeoutMinutes: number;
@@ -37,7 +42,7 @@ interface JobFormProps {
 }
 
 const TABS = [
-  { id: "script", label: "Script", icon: "M16 18l6-6-6-6M8 6l-6 6 6 6" },
+  { id: "action", label: "Action", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
   { id: "schedule", label: "Schedule", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
   { id: "env", label: "Variables", icon: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" },
   { id: "settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
@@ -46,7 +51,7 @@ const TABS = [
 type TabId = typeof TABS[number]["id"];
 
 export default function JobForm({ data, onChange, errors, onSubmit, submitting, submitLabel, submittingLabel, header }: JobFormProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("script");
+  const [activeTab, setActiveTab] = useState<TabId>("action");
 
   function update(partial: Partial<JobFormData>) {
     onChange({ ...data, ...partial });
@@ -72,6 +77,41 @@ export default function JobForm({ data, onChange, errors, onSubmit, submitting, 
           placeholder="e.g. Daily Report, Health Check"
           className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
         {errors.name && <p className="mt-1.5 text-sm text-red-500">{errors.name}</p>}
+      </div>
+
+      {/* Job type selector */}
+      <div>
+        <label className="mb-2 block text-sm font-semibold text-slate-700">Job Type</label>
+        <div className="flex gap-3">
+          <button type="button" onClick={() => update({ jobType: "webhook" })}
+            className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+              data.jobType === "webhook" ? "border-violet-500 bg-violet-50/50" : "border-slate-200 hover:border-slate-300"
+            }`}>
+            <div className="flex items-center gap-2.5">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${data.jobType === "webhook" ? "bg-violet-100 text-violet-600" : "bg-slate-100 text-slate-400"}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">HTTP Request</p>
+                <p className="text-xs text-slate-500">Call any URL on schedule — no code needed</p>
+              </div>
+            </div>
+          </button>
+          <button type="button" onClick={() => update({ jobType: "script" })}
+            className={`flex-1 rounded-xl border-2 p-4 text-left transition-all ${
+              data.jobType === "script" ? "border-violet-500 bg-violet-50/50" : "border-slate-200 hover:border-slate-300"
+            }`}>
+            <div className="flex items-center gap-2.5">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${data.jobType === "script" ? "bg-violet-100 text-violet-600" : "bg-slate-100 text-slate-400"}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" /></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Custom Script</p>
+                <p className="text-xs text-slate-500">Write JavaScript for advanced automation</p>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Validation errors summary — visible regardless of active tab */}
@@ -104,9 +144,18 @@ export default function JobForm({ data, onChange, errors, onSubmit, submitting, 
 
       {/* Tab content */}
       <div className="min-h-[320px]">
-        {activeTab === "script" && (
+        {activeTab === "action" && data.jobType === "webhook" && (
+          <WebhookPanel
+            url={data.webhookUrl} onUrlChange={(v) => update({ webhookUrl: v })}
+            method={data.webhookMethod} onMethodChange={(v) => update({ webhookMethod: v })}
+            headers={data.webhookHeaders} onHeadersChange={(v) => update({ webhookHeaders: v })}
+            body={data.webhookBody} onBodyChange={(v) => update({ webhookBody: v })}
+          />
+        )}
+
+        {activeTab === "action" && data.jobType === "script" && (
           <div>
-            <p className="mb-3 text-sm text-slate-500">The JavaScript code that will run on schedule.</p>
+            <p className="mb-3 text-sm text-slate-500">Write JavaScript that runs on schedule.</p>
             <ScriptEditor value={data.script} onChange={(v) => update({ script: v })} />
           </div>
         )}
@@ -210,7 +259,7 @@ function SettingsPanel({ timeoutMinutes, onTimeoutChange, maxRetries, onMaxRetri
             className="w-20 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
           <span className="text-sm text-slate-500">minutes (1–30)</span>
         </div>
-        <p className="mt-1 text-xs text-slate-400">Script will be killed if it exceeds this duration.</p>
+        <p className="mt-1 text-xs text-slate-400">Job will be stopped if it exceeds this duration.</p>
       </div>
       <div>
         <label htmlFor="retries" className="mb-1.5 block text-sm font-semibold text-slate-700">Retries on failure</label>
@@ -231,6 +280,85 @@ function SettingsPanel({ timeoutMinutes, onTimeoutChange, maxRetries, onMaxRetri
             <option value={300}>5 minutes</option>
             <option value={900}>15 minutes</option>
           </select>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+
+function WebhookPanel({ url, onUrlChange, method, onMethodChange, headers, onHeadersChange, body, onBodyChange }: {
+  url: string; onUrlChange: (v: string) => void;
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; onMethodChange: (v: "GET" | "POST" | "PUT" | "PATCH" | "DELETE") => void;
+  headers: Record<string, string>; onHeadersChange: (v: Record<string, string>) => void;
+  body: string; onBodyChange: (v: string) => void;
+}) {
+  const [newHKey, setNewHKey] = useState("");
+  const [newHValue, setNewHValue] = useState("");
+  const headerEntries = Object.entries(headers);
+
+  function addHeader() {
+    if (!newHKey.trim()) return;
+    onHeadersChange({ ...headers, [newHKey.trim()]: newHValue });
+    setNewHKey(""); setNewHValue("");
+  }
+
+  function removeHeader(key: string) {
+    const next = { ...headers };
+    delete next[key];
+    onHeadersChange(next);
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className="mb-1.5 block text-sm font-semibold text-slate-700">URL</label>
+        <div className="flex gap-2">
+          <select value={method} onChange={(e) => onMethodChange(e.target.value as typeof method)}
+            className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-2.5 text-sm font-semibold text-slate-700 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100">
+            {HTTP_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <input type="url" value={url} onChange={(e) => onUrlChange(e.target.value)}
+            placeholder="https://api.example.com/webhook"
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
+        </div>
+        <p className="mt-1.5 text-xs text-slate-400">The URL that will be called on schedule. Must start with https://</p>
+      </div>
+
+      {/* Headers */}
+      <div>
+        <label className="mb-1.5 block text-sm font-semibold text-slate-700">Headers <span className="font-normal text-slate-400">(optional)</span></label>
+        {headerEntries.length > 0 && (
+          <div className="mb-3 space-y-2">
+            {headerEntries.map(([key, value]) => (
+              <div key={key} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                <code className="text-xs font-semibold text-slate-700">{key}</code>
+                <span className="text-xs text-slate-400">:</span>
+                <code className="flex-1 truncate text-xs text-slate-500">{value}</code>
+                <button type="button" onClick={() => removeHeader(key)} className="text-xs text-red-400 hover:text-red-600">Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <input type="text" value={newHKey} onChange={(e) => setNewHKey(e.target.value)} placeholder="Content-Type" maxLength={100}
+            className="w-36 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
+          <input type="text" value={newHValue} onChange={(e) => setNewHValue(e.target.value)} placeholder="application/json" maxLength={500}
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
+          <button type="button" onClick={addHeader} disabled={!newHKey.trim()}
+            className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 disabled:opacity-40">Add</button>
+        </div>
+      </div>
+
+      {/* Body (for POST/PUT/PATCH) */}
+      {method !== "GET" && method !== "DELETE" && (
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-slate-700">Request Body <span className="font-normal text-slate-400">(optional)</span></label>
+          <textarea value={body} onChange={(e) => onBodyChange(e.target.value)}
+            placeholder='{"key": "value"}'
+            rows={5}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100" />
         </div>
       )}
     </div>

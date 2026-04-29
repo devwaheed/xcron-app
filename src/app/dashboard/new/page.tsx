@@ -8,10 +8,39 @@ import JobForm, { type JobFormData, type JobFormErrors } from "@/components/JobF
 import { getLocalTimezone } from "@/components/SchedulePicker";
 import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 
+function generateWebhookScript(data: JobFormData): string {
+  const headers = Object.entries(data.webhookHeaders);
+  const hasBody = data.webhookMethod !== "GET" && data.webhookMethod !== "DELETE" && data.webhookBody.trim();
+
+  let script = `// Auto-generated HTTP request job\n`;
+  script += `const res = await fetch("${data.webhookUrl}", {\n`;
+  script += `  method: "${data.webhookMethod}",\n`;
+  if (headers.length > 0) {
+    script += `  headers: {\n`;
+    for (const [k, v] of headers) {
+      script += `    "${k}": "${v}",\n`;
+    }
+    script += `  },\n`;
+  }
+  if (hasBody) {
+    script += `  body: ${JSON.stringify(data.webhookBody)},\n`;
+  }
+  script += `});\n\n`;
+  script += `if (!res.ok) {\n`;
+  script += `  const body = await res.text();\n`;
+  script += `  throw new Error(\`HTTP \${res.status}: \${body.slice(0, 500)}\`);\n`;
+  script += `}\n\n`;
+  script += `const body = await res.text();\n`;
+  script += `console.log(\`✓ \${res.status} — \${body.slice(0, 1000)}\`);\n`;
+  return script;
+}
+
 function validateForm(data: JobFormData): JobFormErrors {
   const errors: JobFormErrors = {};
   if (!data.name.trim()) errors.name = "Name is required";
-  if (!data.script.trim()) errors.script = "Script is required";
+  if (data.jobType === "script" && !data.script.trim()) errors.script = "Script is required";
+  if (data.jobType === "webhook" && !data.webhookUrl.trim()) errors.script = "URL is required";
+  if (data.jobType === "webhook" && data.webhookUrl && !data.webhookUrl.startsWith("http")) errors.script = "URL must start with http:// or https://";
   if (data.schedule.days.length === 0) errors.days = "At least one day must be selected";
   if (data.schedule.hour < 1 || data.schedule.hour > 12 || data.schedule.minute < 0 || data.schedule.minute > 59) {
     errors.time = "Hour must be 1–12 and minute must be 0–59";
@@ -22,7 +51,8 @@ function validateForm(data: JobFormData): JobFormErrors {
 export default function NewActionPage() {
   const router = useRouter();
   const [data, setData] = useState<JobFormData>({
-    name: "", script: "",
+    name: "", jobType: "webhook", script: "",
+    webhookUrl: "", webhookMethod: "GET", webhookHeaders: {}, webhookBody: "",
     schedule: { days: [], hour: 9, minute: 0, period: "AM", timezone: getLocalTimezone() },
     envVars: {}, timeoutMinutes: 5, maxRetries: 0, retryDelaySeconds: 60,
   });
@@ -45,12 +75,19 @@ export default function NewActionPage() {
     if (Object.keys(v).length > 0) { setErrors(v); return; }
     setErrors({});
     setSubmitting(true);
+
+    // For webhook mode, generate a fetch script from the config
+    let scriptContent = data.script;
+    if (data.jobType === "webhook") {
+      scriptContent = generateWebhookScript(data);
+    }
+
     try {
       const res = await fetch("/api/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: data.name.trim(), scriptContent: data.script, schedule: data.schedule,
+          name: data.name.trim(), scriptContent, schedule: data.schedule,
           envVars: data.envVars, timeoutMinutes: data.timeoutMinutes,
           maxRetries: data.maxRetries, retryDelaySeconds: data.retryDelaySeconds,
         }),

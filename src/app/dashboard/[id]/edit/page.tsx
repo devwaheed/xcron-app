@@ -12,7 +12,8 @@ import { parseApiResponse, networkErrorMessage } from "@/lib/api-client";
 function validateForm(data: JobFormData): JobFormErrors {
   const errors: JobFormErrors = {};
   if (!data.name.trim()) errors.name = "Name is required";
-  if (!data.script.trim()) errors.script = "Script is required";
+  if (data.jobType === "script" && !data.script.trim()) errors.script = "Script is required";
+  if (data.jobType === "webhook" && !data.webhookUrl.trim()) errors.script = "URL is required";
   if (data.schedule.days.length === 0) errors.days = "At least one day must be selected";
   if (data.schedule.hour < 1 || data.schedule.hour > 12 || data.schedule.minute < 0 || data.schedule.minute > 59) {
     errors.time = "Hour must be 1–12 and minute must be 0–59";
@@ -26,7 +27,8 @@ export default function EditActionPage() {
   const actionId = params.id;
 
   const [data, setData] = useState<JobFormData>({
-    name: "", script: "",
+    name: "", jobType: "webhook", script: "",
+    webhookUrl: "", webhookMethod: "GET", webhookHeaders: {}, webhookBody: "",
     schedule: { days: [], hour: 9, minute: 0, period: "AM", timezone: getLocalTimezone() },
     envVars: {}, timeoutMinutes: 5, maxRetries: 0, retryDelaySeconds: 60,
   });
@@ -44,9 +46,13 @@ export default function EditActionPage() {
           setLoadError(e.message); setLoading(false); return;
         }
         const action: Action = await res.json();
+        // Detect if this is a webhook job by checking script content
+        const isWebhook = action.scriptContent.includes("// Auto-generated HTTP request job");
         setData({
           name: action.name,
+          jobType: isWebhook ? "webhook" : "script",
           script: action.scriptContent,
+          webhookUrl: "", webhookMethod: "GET", webhookHeaders: {}, webhookBody: "",
           schedule: action.schedule,
           envVars: action.envVars ?? {},
           timeoutMinutes: action.timeoutMinutes ?? 5,
