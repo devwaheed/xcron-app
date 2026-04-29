@@ -464,6 +464,8 @@ export default function LandingPage() {
               <a href="#how-it-works" className="transition-colors hover:text-slate-600">How it works</a>
               <a href="#pricing" className="transition-colors hover:text-slate-600">Pricing</a>
               <Link href="/docs" className="transition-colors hover:text-slate-600">Docs</Link>
+              <Link href="/terms" className="transition-colors hover:text-slate-600">Terms</Link>
+              <Link href="/privacy" className="transition-colors hover:text-slate-600">Privacy</Link>
               <Link href="/login" className="transition-colors hover:text-slate-600">Sign in</Link>
             </div>
             <div className="text-sm text-slate-300">
