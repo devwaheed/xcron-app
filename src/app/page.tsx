@@ -16,7 +16,7 @@ const PLANS = [
     id: 1,
     name: "Starter",
     description: "For individuals automating a few tasks.",
-    price: "$49",
+    price: "$9",
     features: [
       "5 scheduled jobs",
       "100 runs per month",
@@ -28,7 +28,7 @@ const PLANS = [
     id: 2,
     name: "Pro",
     description: "For professionals who rely on automation daily.",
-    price: "$99",
+    price: "$19",
     popular: true,
     features: [
       "15 scheduled jobs",
@@ -41,7 +41,7 @@ const PLANS = [
     id: 3,
     name: "Business",
     description: "For teams running critical automations at scale.",
-    price: "$199",
+    price: "$39",
     features: [
       "50 scheduled jobs",
       "2,000 runs per month",
@@ -317,7 +317,7 @@ export default function LandingPage() {
                 Simple pricing, no surprises
               </h2>
               <p className="mt-4 text-lg text-slate-500">
-                One-time payment. Pick a plan, start automating, own it forever.
+                Start small, scale as you grow. Cancel anytime.
               </p>
             </div>
           </ScrollReveal>
@@ -340,7 +340,7 @@ export default function LandingPage() {
                       <p className="mt-1 text-sm text-slate-500">{plan.description}</p>
                       <p className="mt-6 flex items-baseline">
                         <span className="text-5xl font-extrabold tracking-tight text-slate-900">{plan.price}</span>
-                        <span className="ml-2 text-sm text-slate-500">one-time</span>
+                        <span className="ml-2 text-sm text-slate-500">/month</span>
                       </p>
                       <ul className="mt-8 flex-1 divide-y divide-slate-100">
                         {plan.features.map((f) => (
@@ -365,7 +365,7 @@ export default function LandingPage() {
                     <p className="mt-1 text-sm text-slate-500">{plan.description}</p>
                     <p className="mt-6 flex items-baseline">
                       <span className="text-5xl font-extrabold tracking-tight text-slate-900">{plan.price}</span>
-                      <span className="ml-2 text-sm text-slate-500">one-time</span>
+                      <span className="ml-2 text-sm text-slate-500">/month</span>
                     </p>
                     <ul className="mt-8 flex-1 divide-y divide-slate-100">
                       {plan.features.map((f) => (
@@ -389,7 +389,7 @@ export default function LandingPage() {
 
           <ScrollReveal delay={350}>
             <p className="mt-10 text-center text-sm text-slate-400">
-              All plans include encrypted execution, automatic retries, and email alerts. Pay once, use forever — your jobs keep running as long as you need them. Have a promo code? Enter it during signup.
+              All plans include encrypted execution, automatic retries, and email alerts. Cancel anytime — no contracts, no commitments. Have a promo code? Enter it during signup.
             </p>
           </ScrollReveal>
         </div>

@@ -38,9 +38,9 @@ describe('PricingPage', () => {
   it('displays correct prices', async () => {
     render(<PricingPage />);
 
-    expect(screen.getAllByText('$49').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('$99').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('$199').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$9').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$19').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$39').length).toBeGreaterThan(0);
   });
 
   it('displays correct action limits', async () => {
