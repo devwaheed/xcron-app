@@ -389,7 +389,7 @@ export default function LandingPage() {
 
           <ScrollReveal delay={350}>
             <p className="mt-10 text-center text-sm text-slate-400">
-              All plans include encrypted execution, GitHub-backed infrastructure, and automatic retries. Have a promo code? Enter it during signup.
+              All plans include encrypted execution, automatic retries, and email alerts. Have a promo code? Enter it during signup.
             </p>
           </ScrollReveal>
         </div>

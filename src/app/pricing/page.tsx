@@ -221,7 +221,7 @@ export default function PricingPage() {
         </div>
 
         <p className="mt-10 text-center text-sm text-slate-400">
-          All plans include encrypted execution, GitHub-backed infrastructure, and automatic retries. Have a promo code? Redeem it in your profile after signup.
+          All plans include encrypted execution, automatic retries, and email alerts. Have a promo code? Redeem it in your profile after signup.
         </p>
 
         {/* Comparison table */}
