@@ -29,13 +29,13 @@ vi.mock('@/lib/supabase-server', () => ({
   })),
 }));
 
-const mockEnableWorkflow = vi.fn();
-const mockDisableWorkflow = vi.fn();
+const mockResume = vi.fn();
+const mockPause = vi.fn();
 
-vi.mock('@/lib/github-bridge', () => ({
-  createGitHubBridge: () => ({
-    enableWorkflow: mockEnableWorkflow,
-    disableWorkflow: mockDisableWorkflow,
+vi.mock('@/lib/engine-factory', () => ({
+  getEngine: () => ({
+    resume: mockResume,
+    pause: mockPause,
   }),
 }));
 
@@ -139,8 +139,8 @@ function setupSupabaseUpdate(row: Record<string, unknown> | null, error: unknown
 describe('Property 9: Pause/resume round-trip', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockEnableWorkflow.mockResolvedValue(undefined);
-    mockDisableWorkflow.mockResolvedValue(undefined);
+    mockResume.mockResolvedValue(undefined);
+    mockPause.mockResolvedValue(undefined);
   });
 
   it('for any active action, pause then resume restores original active status', async () => {
@@ -151,8 +151,8 @@ describe('Property 9: Pause/resume round-trip', () => {
         arbitraryAction.filter((a) => a.status === 'active'),
         async (action) => {
           vi.clearAllMocks();
-          mockDisableWorkflow.mockResolvedValue(undefined);
-          mockEnableWorkflow.mockResolvedValue(undefined);
+          mockPause.mockResolvedValue(undefined);
+          mockResume.mockResolvedValue(undefined);
 
           // ── Step 1: Pause (active → paused) ──
           const activeRow = actionToRow(action);
@@ -168,9 +168,9 @@ describe('Property 9: Pause/resume round-trip', () => {
           const pausedBody = await pauseResponse.json();
           expect(pausedBody.status).toBe('paused');
 
-          // Verify disableWorkflow was called
-          expect(mockDisableWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
-          expect(mockEnableWorkflow).not.toHaveBeenCalled();
+          // Verify pause was called with (actionId, userId)
+          expect(mockPause).toHaveBeenCalledWith(action.id, TEST_USER_ID);
+          expect(mockResume).not.toHaveBeenCalled();
 
           // ── Step 2: Resume (paused → active) ──
           setupSupabaseFetch(pausedRow); // fetch existing paused action
@@ -185,8 +185,8 @@ describe('Property 9: Pause/resume round-trip', () => {
           const resumedBody = await resumeResponse.json();
           expect(resumedBody.status).toBe('active');
 
-          // Verify enableWorkflow was called on resume
-          expect(mockEnableWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
+          // Verify resume was called with (actionId, userId)
+          expect(mockResume).toHaveBeenCalledWith(action.id, TEST_USER_ID);
 
           // Round-trip: status is back to active
           expect(resumedBody.status).toBe(action.status);
@@ -199,7 +199,7 @@ describe('Property 9: Pause/resume round-trip', () => {
     );
   });
 
-  it('pause calls disableWorkflow and resume calls enableWorkflow in correct order', async () => {
+  it('pause calls engine.pause and resume calls engine.resume in correct order', async () => {
     const { POST } = await import('@/app/api/actions/[id]/toggle/route');
 
     await fc.assert(
@@ -208,11 +208,11 @@ describe('Property 9: Pause/resume round-trip', () => {
         async (action) => {
           vi.clearAllMocks();
           const callOrder: string[] = [];
-          mockDisableWorkflow.mockImplementation(async () => {
-            callOrder.push('disable');
+          mockPause.mockImplementation(async () => {
+            callOrder.push('pause');
           });
-          mockEnableWorkflow.mockImplementation(async () => {
-            callOrder.push('enable');
+          mockResume.mockImplementation(async () => {
+            callOrder.push('resume');
           });
 
           const activeRow = actionToRow(action);
@@ -231,8 +231,8 @@ describe('Property 9: Pause/resume round-trip', () => {
             params: Promise.resolve({ id: action.id }),
           });
 
-          // Verify the GitHub API calls happened in the correct order
-          expect(callOrder).toEqual(['disable', 'enable']);
+          // Verify the engine calls happened in the correct order
+          expect(callOrder).toEqual(['pause', 'resume']);
         },
       ),
       { numRuns: 100 },

@@ -1,6 +1,13 @@
-import { getEnvConfig } from '@/lib/env';
 import type { RunEntry } from '@/types';
+import { getEngine } from '@/lib/engine-factory';
+import { getScriptPath, getWorkflowPath } from '@/lib/engines/github-actions';
 
+/**
+ * GitHubBridge — legacy interface kept for backward compatibility.
+ * All methods delegate to the configured ExecutionEngine.
+ *
+ * New code should use getEngine() from engine-factory.ts directly.
+ */
 export interface GitHubBridge {
   commitScript(userId: string, actionId: string, scriptContent: string): Promise<void>;
   commitWorkflow(userId: string, actionId: string, workflowYaml: string): Promise<void>;
@@ -13,247 +20,49 @@ export interface GitHubBridge {
 }
 
 /**
- * GitHub App installation token cache.
- * Tokens are valid for 1 hour — we cache and refresh at 50 min.
+ * Creates a GitHubBridge that delegates to the active execution engine.
+ * This is the compatibility layer — existing route code doesn't need to change.
  */
-let cachedAppToken: { token: string; expiresAt: number } | null = null;
-
-async function getGitHubAppToken(appId: string, privateKey: string, installationId: string): Promise<string> {
-  if (cachedAppToken && Date.now() < cachedAppToken.expiresAt) {
-    return cachedAppToken.token;
-  }
-
-  // Create JWT for GitHub App authentication
-  const now = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ iat: now - 60, exp: now + 600, iss: appId })).toString("base64url");
-
-  const crypto = await import("crypto");
-  const sign = crypto.createSign("RSA-SHA256");
-  sign.update(`${header}.${payload}`);
-  const signature = sign.sign(privateKey.replace(/\\n/g, "\n"), "base64url");
-  const jwt = `${header}.${payload}.${signature}`;
-
-  // Exchange JWT for installation token
-  const res = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
-
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`GitHub App token exchange failed: ${res.status} — ${detail}`);
-  }
-
-  const data = await res.json();
-  cachedAppToken = {
-    token: data.token,
-    expiresAt: Date.now() + 50 * 60 * 1000, // refresh 10 min before expiry
-  };
-  return data.token;
-}
-
-/**
- * Get the GitHub token to use — prefers GitHub App if configured, falls back to PAT.
- */
-async function getGitHubToken(env: ReturnType<typeof getEnvConfig>): Promise<string> {
-  if (env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY && env.GITHUB_APP_INSTALLATION_ID) {
-    return getGitHubAppToken(env.GITHUB_APP_ID, env.GITHUB_APP_PRIVATE_KEY, env.GITHUB_APP_INSTALLATION_ID);
-  }
-  return env.GITHUB_PAT;
-}
-
-function getScriptPath(userId: string, actionId: string): string {
-  return `scripts/${userId}/${actionId}.js`;
-}
-
-function getWorkflowPath(userId: string, actionId: string): string {
-  return `.github/workflows/${userId}_${actionId}.yml`;
-}
-
-function githubHeaders(pat: string): Record<string, string> {
-  return {
-    Authorization: `Bearer ${pat}`,
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    'Content-Type': 'application/json',
-  };
-}
-
-async function getFileSha(
-  owner: string,
-  repo: string,
-  path: string,
-  pat: string
-): Promise<string | null> {
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const res = await fetch(url, { headers: githubHeaders(pat) });
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error(`GitHub API error fetching SHA for ${path}: ${res.status} ${res.statusText}`);
-  }
-  const data = await res.json();
-  return data.sha as string;
-}
-
-async function commitFile(
-  owner: string,
-  repo: string,
-  path: string,
-  content: string,
-  message: string,
-  pat: string
-): Promise<void> {
-  const sha = await getFileSha(owner, repo, path, pat);
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const body: Record<string, string> = {
-    message,
-    content: Buffer.from(content).toString('base64'),
-  };
-  if (sha) {
-    body.sha = sha;
-  }
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: githubHeaders(pat),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`GitHub API error committing ${path}: ${res.status} ${res.statusText} - ${detail}`);
-  }
-}
-
-async function deleteFile(
-  owner: string,
-  repo: string,
-  path: string,
-  message: string,
-  pat: string
-): Promise<void> {
-  const sha = await getFileSha(owner, repo, path, pat);
-  if (!sha) {
-    // File doesn't exist, nothing to delete
-    return;
-  }
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const res = await fetch(url, {
-    method: 'DELETE',
-    headers: githubHeaders(pat),
-    body: JSON.stringify({ message, sha }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`GitHub API error deleting ${path}: ${res.status} ${res.statusText} - ${detail}`);
-  }
-}
-
 export function createGitHubBridge(): GitHubBridge {
-  const env = getEnvConfig();
-  const { GITHUB_REPO_OWNER: owner, GITHUB_REPO_NAME: repo } = env;
-
-  /** Lazily resolve the token (PAT or GitHub App) */
-  const getToken = () => getGitHubToken(env);
+  const engine = getEngine();
 
   return {
-    async commitScript(userId: string, actionId: string, scriptContent: string): Promise<void> {
-      const pat = await getToken();
-      const path = getScriptPath(userId, actionId);
-      await commitFile(owner, repo, path, scriptContent, `Update script for action ${actionId}`, pat);
-    },
-
-    async commitWorkflow(userId: string, actionId: string, workflowYaml: string): Promise<void> {
-      const pat = await getToken();
-      const path = getWorkflowPath(userId, actionId);
-      await commitFile(owner, repo, path, workflowYaml, `Update workflow for action ${actionId}`, pat);
-    },
-
-    async deleteScript(userId: string, actionId: string): Promise<void> {
-      const pat = await getToken();
-      const path = getScriptPath(userId, actionId);
-      await deleteFile(owner, repo, path, `Delete script for action ${actionId}`, pat);
-    },
-
-    async deleteWorkflow(userId: string, actionId: string): Promise<void> {
-      const pat = await getToken();
-      const path = getWorkflowPath(userId, actionId);
-      await deleteFile(owner, repo, path, `Delete workflow for action ${actionId}`, pat);
-    },
-
-    async enableWorkflow(userId: string, actionId: string): Promise<void> {
-      const pat = await getToken();
-      const workflowFileName = `${userId}_${actionId}.yml`;
-      const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/enable`;
-      const res = await fetch(url, { method: 'PUT', headers: githubHeaders(pat) });
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(`GitHub API error enabling workflow ${actionId}: ${res.status} ${res.statusText} - ${detail}`);
+    async commitScript(userId, actionId, scriptContent) {
+      if ('saveScript' in engine) {
+        await (engine as { saveScript: (u: string, a: string, c: string) => Promise<void> }).saveScript(userId, actionId, scriptContent);
       }
     },
 
-    async disableWorkflow(userId: string, actionId: string): Promise<void> {
-      const pat = await getToken();
-      const workflowFileName = `${userId}_${actionId}.yml`;
-      const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/disable`;
-      const res = await fetch(url, { method: 'PUT', headers: githubHeaders(pat) });
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(`GitHub API error disabling workflow ${actionId}: ${res.status} ${res.statusText} - ${detail}`);
+    async commitWorkflow() {
+      // Workflow generation is handled inside engine.deploy() now.
+      // This is a no-op for backward compat — callers that use
+      // commitScript + commitWorkflow separately should migrate to engine.deploy().
+    },
+
+    async deleteScript(userId, actionId) {
+      if ('deleteScript' in engine) {
+        await (engine as { deleteScript: (u: string, a: string) => Promise<void> }).deleteScript(userId, actionId);
       }
     },
 
-    async triggerWorkflow(userId: string, actionId: string): Promise<void> {
-      const pat = await getToken();
-      const workflowFileName = `${userId}_${actionId}.yml`;
-      const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: githubHeaders(pat),
-        body: JSON.stringify({ ref: 'main' }),
-      });
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(`GitHub API error triggering workflow ${actionId}: ${res.status} ${res.statusText} - ${detail}`);
-      }
+    async deleteWorkflow() {
+      // Handled by engine.undeploy()
     },
 
-    async getWorkflowRuns(userId: string, actionId: string, page: number, status?: string): Promise<RunEntry[]> {
-      const pat = await getToken();
-      const workflowFileName = `${userId}_${actionId}.yml`;
-      const params = new URLSearchParams({
-        page: String(page),
-        per_page: '100',
-      });
-      if (status) {
-        params.set('status', status === 'success' ? 'completed' : status === 'failure' ? 'completed' : status);
-      }
-      const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/runs?${params}`;
-      const res = await fetch(url, { headers: githubHeaders(pat) });
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(`GitHub API error fetching runs for ${actionId}: ${res.status} ${res.statusText} - ${detail}`);
-      }
-      const data = await res.json();
-      const runs: RunEntry[] = (data.workflow_runs ?? []).map((run: Record<string, unknown>) => ({
-        id: run.id as number,
-        status: run.conclusion === 'success' ? 'success' : 'failure',
-        timestamp: run.created_at as string,
-        output: (run.name as string) ?? '',
-        trigger: run.event === 'workflow_dispatch' ? 'workflow_dispatch' : 'schedule',
-      }));
+    async enableWorkflow(userId, actionId) {
+      await engine.resume(actionId, userId);
+    },
 
-      // Apply client-side status filter if needed (GitHub API filters by workflow status, not conclusion)
-      if (status === 'success') {
-        return runs.filter((r) => r.status === 'success');
-      }
-      if (status === 'failure') {
-        return runs.filter((r) => r.status === 'failure');
-      }
-      return runs;
+    async disableWorkflow(userId, actionId) {
+      await engine.pause(actionId, userId);
+    },
+
+    async triggerWorkflow(userId, actionId) {
+      await engine.trigger(actionId, userId);
+    },
+
+    async getWorkflowRuns(userId, actionId, page, status) {
+      return engine.getRuns(actionId, userId, page, status);
     },
   };
 }

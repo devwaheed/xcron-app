@@ -29,11 +29,11 @@ vi.mock('@/lib/supabase-server', () => ({
   })),
 }));
 
-const mockTriggerWorkflow = vi.fn();
+const mockTrigger = vi.fn();
 
-vi.mock('@/lib/github-bridge', () => ({
-  createGitHubBridge: () => ({
-    triggerWorkflow: mockTriggerWorkflow,
+vi.mock('@/lib/engine-factory', () => ({
+  getEngine: () => ({
+    trigger: mockTrigger,
   }),
 }));
 
@@ -120,10 +120,10 @@ function setupSupabaseFetch(row: Record<string, unknown> | null, error: unknown 
 describe('Property 11: Manual trigger dispatches workflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockTriggerWorkflow.mockResolvedValue(undefined);
+    mockTrigger.mockResolvedValue(undefined);
   });
 
-  it('for any active action, trigger endpoint calls triggerWorkflow with correct action ID', async () => {
+  it('for any active action, trigger endpoint calls trigger with correct action ID', async () => {
     const { POST } = await import('@/app/api/actions/[id]/trigger/route');
 
     await fc.assert(
@@ -131,7 +131,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
         arbitraryAction.filter((a) => a.status === 'active'),
         async (action) => {
           vi.clearAllMocks();
-          mockTriggerWorkflow.mockResolvedValue(undefined);
+          mockTrigger.mockResolvedValue(undefined);
 
           setupSupabaseFetch({ id: action.id, status: 'active', user_id: TEST_USER_ID });
 
@@ -147,9 +147,9 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
           // Should succeed
           expect(response.status).toBe(200);
 
-          // triggerWorkflow must have been called exactly once with the action's ID
-          expect(mockTriggerWorkflow).toHaveBeenCalledTimes(1);
-          expect(mockTriggerWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
+          // trigger must have been called exactly once with (actionId, userId)
+          expect(mockTrigger).toHaveBeenCalledTimes(1);
+          expect(mockTrigger).toHaveBeenCalledWith(action.id, TEST_USER_ID);
         },
       ),
       { numRuns: 100 },
@@ -164,7 +164,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
         arbitraryAction.filter((a) => a.status === 'paused'),
         async (action) => {
           vi.clearAllMocks();
-          mockTriggerWorkflow.mockResolvedValue(undefined);
+          mockTrigger.mockResolvedValue(undefined);
 
           setupSupabaseFetch({ id: action.id, status: 'paused', user_id: TEST_USER_ID });
 
@@ -178,7 +178,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
           });
 
           expect(response.status).toBe(409);
-          expect(mockTriggerWorkflow).not.toHaveBeenCalled();
+          expect(mockTrigger).not.toHaveBeenCalled();
         },
       ),
       { numRuns: 100 },
@@ -191,7 +191,7 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
     await fc.assert(
       fc.asyncProperty(fc.uuid(), async (actionId) => {
         vi.clearAllMocks();
-        mockTriggerWorkflow.mockResolvedValue(undefined);
+        mockTrigger.mockResolvedValue(undefined);
 
         // Supabase returns no data (action not found)
         setupSupabaseFetch(null, { message: 'not found' });
@@ -206,8 +206,8 @@ describe('Property 11: Manual trigger dispatches workflow', () => {
         });
 
         expect(response.status).toBe(404);
-        // triggerWorkflow should NOT be called for non-existent actions
-        expect(mockTriggerWorkflow).not.toHaveBeenCalled();
+        // trigger should NOT be called for non-existent actions
+        expect(mockTrigger).not.toHaveBeenCalled();
       }),
       { numRuns: 100 },
     );

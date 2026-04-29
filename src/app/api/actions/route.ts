@@ -3,11 +3,10 @@ import { cookies } from 'next/headers';
 import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { mapRowToAction } from '@/lib/mapRowToAction';
 import { validateSchedule } from '@/lib/schedule-validator';
-import { generate } from '@/lib/workflow-generator';
-import { createGitHubBridge } from '@/lib/github-bridge';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { checkActionLimit } from '@/lib/usage-tracker';
 import { sanitizeScript } from '@/lib/script-sanitizer';
+import { getEngine } from '@/lib/engine-factory';
 import type { Action, Schedule } from '@/types';
 
 /**
@@ -164,18 +163,14 @@ export async function POST(request: NextRequest) {
       userId,
     };
 
-    // Generate workflow YAML
-    const workflowYaml = generate(action, userId);
-
-    // GitHub-first: commit script and workflow before touching Supabase
-    const bridge = createGitHubBridge();
+    // Deploy script + workflow via execution engine
+    const engine = getEngine();
     try {
-      await bridge.commitScript(userId, actionId, cleanScript);
-      await bridge.commitWorkflow(userId, actionId, workflowYaml);
+      await engine.deploy(action, userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'GitHub operation failed', details: message },
+        { error: 'Deployment failed', details: message },
         { status: 502 }
       );
     }

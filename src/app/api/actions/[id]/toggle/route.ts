@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAuthenticatedClient } from '@/lib/supabase-server';
-import { createGitHubBridge } from '@/lib/github-bridge';
+import { getEngine } from '@/lib/engine-factory';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { mapRowToAction } from '@/lib/mapRowToAction';
 
@@ -47,20 +47,19 @@ export async function POST(
       );
     }
 
-    const bridge = createGitHubBridge();
+    const engine = getEngine();
     const newStatus = existing.status === 'active' ? 'paused' : 'active';
 
-    // GitHub-first: toggle workflow before updating Supabase
     try {
       if (newStatus === 'paused') {
-        await bridge.disableWorkflow(userId, id);
+        await engine.pause(id, userId);
       } else {
-        await bridge.enableWorkflow(userId, id);
+        await engine.resume(id, userId);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'GitHub operation failed', details: message },
+        { error: 'Engine operation failed', details: message },
         { status: 502 }
       );
     }

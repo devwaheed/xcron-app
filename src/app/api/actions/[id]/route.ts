@@ -3,10 +3,9 @@ import { cookies } from 'next/headers';
 import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { mapRowToAction } from '@/lib/mapRowToAction';
 import { validateSchedule } from '@/lib/schedule-validator';
-import { generate } from '@/lib/workflow-generator';
-import { createGitHubBridge } from '@/lib/github-bridge';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { sanitizeScript } from '@/lib/script-sanitizer';
+import { getEngine } from '@/lib/engine-factory';
 import type { Action, Schedule } from '@/types';
 
 /**
@@ -49,15 +48,14 @@ export async function DELETE(
       );
     }
 
-    // GitHub-first: delete script and workflow before touching Supabase
-    const bridge = createGitHubBridge();
+    // Remove deployed artifacts via execution engine
+    const engine = getEngine();
     try {
-      await bridge.deleteScript(userId, id);
-      await bridge.deleteWorkflow(userId, id);
+      await engine.undeploy(id, userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'GitHub operation failed', details: message },
+        { error: 'Undeployment failed', details: message },
         { status: 502 }
       );
     }
@@ -258,18 +256,14 @@ export async function PUT(
       userId,
     };
 
-    // Generate updated workflow YAML
-    const workflowYaml = generate(updatedAction, userId);
-
-    // GitHub-first: commit updated script and workflow before touching Supabase
-    const bridge = createGitHubBridge();
+    // Deploy updated script + workflow via execution engine
+    const engine = getEngine();
     try {
-      await bridge.commitScript(userId, id, cleanScript);
-      await bridge.commitWorkflow(userId, id, workflowYaml);
+      await engine.deploy(updatedAction, userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'GitHub operation failed', details: message },
+        { error: 'Deployment failed', details: message },
         { status: 502 }
       );
     }

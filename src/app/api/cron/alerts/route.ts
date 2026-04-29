@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
-import { createGitHubBridge } from '@/lib/github-bridge';
+import { getEngine } from '@/lib/engine-factory';
 import { sendJobFailureAlert } from '@/lib/email';
 
 /**
@@ -30,12 +30,11 @@ export async function POST(request: NextRequest) {
     }
 
     let alertsSent = 0;
-    const bridge = createGitHubBridge();
+    const engine = getEngine();
 
     for (const action of actions) {
       try {
-        // Get the latest run
-        const runs = await bridge.getWorkflowRuns(action.user_id, action.id, 1);
+        const runs = await engine.getRuns(action.id, action.user_id, 1);
         if (runs.length === 0) continue;
 
         const latestRun = runs[0];

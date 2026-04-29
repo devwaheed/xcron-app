@@ -26,10 +26,9 @@ vi.mock('@/lib/supabase-server', () => ({
   })),
 }));
 
-vi.mock('@/lib/github-bridge', () => ({
-  createGitHubBridge: () => ({
-    commitScript: vi.fn().mockResolvedValue(undefined),
-    commitWorkflow: vi.fn().mockResolvedValue(undefined),
+vi.mock('@/lib/engine-factory', () => ({
+  getEngine: () => ({
+    deploy: vi.fn().mockResolvedValue(undefined),
   }),
 }));
 

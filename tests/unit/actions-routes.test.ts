@@ -32,26 +32,22 @@ vi.mock('@/lib/supabase-server', () => ({
   })),
 }));
 
-// Mock GitHub bridge
-const mockCommitScript = vi.fn();
-const mockCommitWorkflow = vi.fn();
-const mockDeleteScript = vi.fn();
-const mockDeleteWorkflow = vi.fn();
-const mockEnableWorkflow = vi.fn();
-const mockDisableWorkflow = vi.fn();
-const mockTriggerWorkflow = vi.fn();
-const mockGetWorkflowRuns = vi.fn();
+// Mock execution engine
+const mockDeploy = vi.fn();
+const mockUndeploy = vi.fn();
+const mockResume = vi.fn();
+const mockPause = vi.fn();
+const mockTrigger = vi.fn();
+const mockGetRuns = vi.fn();
 
-vi.mock('@/lib/github-bridge', () => ({
-  createGitHubBridge: () => ({
-    commitScript: mockCommitScript,
-    commitWorkflow: mockCommitWorkflow,
-    deleteScript: mockDeleteScript,
-    deleteWorkflow: mockDeleteWorkflow,
-    enableWorkflow: mockEnableWorkflow,
-    disableWorkflow: mockDisableWorkflow,
-    triggerWorkflow: mockTriggerWorkflow,
-    getWorkflowRuns: mockGetWorkflowRuns,
+vi.mock('@/lib/engine-factory', () => ({
+  getEngine: () => ({
+    deploy: mockDeploy,
+    undeploy: mockUndeploy,
+    resume: mockResume,
+    pause: mockPause,
+    trigger: mockTrigger,
+    getRuns: mockGetRuns,
   }),
 }));
 
@@ -244,8 +240,7 @@ describe('GET /api/actions/[id]', () => {
 describe('POST /api/actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCommitScript.mockResolvedValue(undefined);
-    mockCommitWorkflow.mockResolvedValue(undefined);
+    mockDeploy.mockResolvedValue(undefined);
   });
 
   const validBody = {
@@ -293,8 +288,11 @@ describe('POST /api/actions', () => {
     expect(body.id).toBe('test-uuid-1234');
     expect(body.name).toBe('My Action');
     expect(body.schedule.days).toEqual([1, 3, 5]);
-    expect(mockCommitScript).toHaveBeenCalledWith(TEST_USER_ID, 'test-uuid-1234', 'console.log("hello")');
-    expect(mockCommitWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'test-uuid-1234', 'name: mock-workflow\n');
+    expect(mockDeploy).toHaveBeenCalledTimes(1);
+    expect(mockDeploy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'test-uuid-1234', userId: TEST_USER_ID }),
+      TEST_USER_ID,
+    );
   });
 
   it('returns 400 when name is missing', async () => {
@@ -331,15 +329,15 @@ describe('POST /api/actions', () => {
     expect(body.error).toBe('Validation failed');
   });
 
-  it('returns 502 when GitHub commit fails and does not touch Supabase', async () => {
-    mockCommitScript.mockRejectedValue(new Error('GitHub API error'));
+  it('returns 502 when engine deploy fails and does not touch Supabase', async () => {
+    mockDeploy.mockRejectedValue(new Error('GitHub API error'));
 
     const { POST } = await import('@/app/api/actions/route');
     const response = await POST(makePostRequest(validBody) as any);
     const body = await response.json();
 
     expect(response.status).toBe(502);
-    expect(body.error).toBe('GitHub operation failed');
+    expect(body.error).toBe('Deployment failed');
     expect(body.details).toContain('GitHub API error');
     // Supabase should NOT have been called
     expect(mockFrom).not.toHaveBeenCalled();
@@ -376,8 +374,7 @@ describe('POST /api/actions', () => {
 describe('PUT /api/actions/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCommitScript.mockResolvedValue(undefined);
-    mockCommitWorkflow.mockResolvedValue(undefined);
+    mockDeploy.mockResolvedValue(undefined);
   });
 
   const validBody = {
@@ -443,8 +440,11 @@ describe('PUT /api/actions/[id]', () => {
     expect(body.name).toBe('Updated Action');
     expect(body.schedule.days).toEqual([0, 2, 4]);
     expect(body.schedule.timezone).toBe('Europe/London');
-    expect(mockCommitScript).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123', 'console.log("updated")');
-    expect(mockCommitWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123', 'name: mock-workflow\n');
+    expect(mockDeploy).toHaveBeenCalledTimes(1);
+    expect(mockDeploy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'abc-123', userId: TEST_USER_ID }),
+      TEST_USER_ID,
+    );
   });
 
   it('returns 404 when action does not exist', async () => {
@@ -458,7 +458,7 @@ describe('PUT /api/actions/[id]', () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe('Action not found');
-    expect(mockCommitScript).not.toHaveBeenCalled();
+    expect(mockDeploy).not.toHaveBeenCalled();
   });
 
   it('returns 400 when name is missing', async () => {
@@ -500,10 +500,10 @@ describe('PUT /api/actions/[id]', () => {
     expect(body.error).toBe('Validation failed');
   });
 
-  it('returns 502 when GitHub commit fails and does not update Supabase', async () => {
+  it('returns 502 when engine deploy fails and does not update Supabase', async () => {
     const existingRow = makeRow();
     mockFetchExisting(existingRow);
-    mockCommitScript.mockRejectedValue(new Error('GitHub API error'));
+    mockDeploy.mockRejectedValue(new Error('GitHub API error'));
 
     const { PUT } = await import('@/app/api/actions/[id]/route');
     const response = await PUT(makePutRequest(validBody) as any, {
@@ -512,7 +512,7 @@ describe('PUT /api/actions/[id]', () => {
     const body = await response.json();
 
     expect(response.status).toBe(502);
-    expect(body.error).toBe('GitHub operation failed');
+    expect(body.error).toBe('Deployment failed');
     expect(body.details).toContain('GitHub API error');
     // mockFrom was called once for the fetch, but should NOT be called again for update
     expect(mockFrom).toHaveBeenCalledTimes(1);
@@ -538,8 +538,7 @@ describe('PUT /api/actions/[id]', () => {
 describe('DELETE /api/actions/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDeleteScript.mockResolvedValue(undefined);
-    mockDeleteWorkflow.mockResolvedValue(undefined);
+    mockUndeploy.mockResolvedValue(undefined);
   });
 
   function mockFetchExisting(row: ReturnType<typeof makeRow> | null, error: unknown = null) {
@@ -571,8 +570,7 @@ describe('DELETE /api/actions/[id]', () => {
 
     expect(response.status).toBe(200);
     expect(body.message).toBe('Action deleted successfully');
-    expect(mockDeleteScript).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123');
-    expect(mockDeleteWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123');
+    expect(mockUndeploy).toHaveBeenCalledWith('abc-123', TEST_USER_ID);
   });
 
   it('returns 404 when action does not exist', async () => {
@@ -587,14 +585,13 @@ describe('DELETE /api/actions/[id]', () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe('Action not found');
-    expect(mockDeleteScript).not.toHaveBeenCalled();
-    expect(mockDeleteWorkflow).not.toHaveBeenCalled();
+    expect(mockUndeploy).not.toHaveBeenCalled();
   });
 
-  it('returns 502 when GitHub delete fails and does not delete from Supabase', async () => {
+  it('returns 502 when engine undeploy fails and does not delete from Supabase', async () => {
     const existingRow = makeRow();
     mockFetchExisting(existingRow);
-    mockDeleteScript.mockRejectedValue(new Error('GitHub API error'));
+    mockUndeploy.mockRejectedValue(new Error('GitHub API error'));
 
     const { DELETE } = await import('@/app/api/actions/[id]/route');
     const request = new Request('http://localhost/api/actions/abc-123', { method: 'DELETE' });
@@ -604,7 +601,7 @@ describe('DELETE /api/actions/[id]', () => {
     const body = await response.json();
 
     expect(response.status).toBe(502);
-    expect(body.error).toBe('GitHub operation failed');
+    expect(body.error).toBe('Undeployment failed');
     expect(body.details).toContain('GitHub API error');
     // mockFrom was called once for the fetch, but should NOT be called again for delete
     expect(mockFrom).toHaveBeenCalledTimes(1);
@@ -626,10 +623,8 @@ describe('DELETE /api/actions/[id]', () => {
     expect(body.error).toBe('Database error');
   });
 
-  it('calls deleteScript before deleteWorkflow', async () => {
-    const callOrder: string[] = [];
-    mockDeleteScript.mockImplementation(async () => { callOrder.push('deleteScript'); });
-    mockDeleteWorkflow.mockImplementation(async () => { callOrder.push('deleteWorkflow'); });
+  it('calls undeploy once', async () => {
+    mockUndeploy.mockResolvedValue(undefined);
 
     const existingRow = makeRow();
     mockFetchExisting(existingRow);
@@ -641,7 +636,8 @@ describe('DELETE /api/actions/[id]', () => {
       params: Promise.resolve({ id: 'abc-123' }),
     });
 
-    expect(callOrder).toEqual(['deleteScript', 'deleteWorkflow']);
+    expect(mockUndeploy).toHaveBeenCalledTimes(1);
+    expect(mockUndeploy).toHaveBeenCalledWith('abc-123', TEST_USER_ID);
   });
 });
 
@@ -649,8 +645,8 @@ describe('DELETE /api/actions/[id]', () => {
 describe('POST /api/actions/[id]/toggle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockEnableWorkflow.mockResolvedValue(undefined);
-    mockDisableWorkflow.mockResolvedValue(undefined);
+    mockResume.mockResolvedValue(undefined);
+    mockPause.mockResolvedValue(undefined);
   });
 
   function mockFetchExisting(row: ReturnType<typeof makeRow> | null, error: unknown = null) {
@@ -685,8 +681,8 @@ describe('POST /api/actions/[id]/toggle', () => {
 
     expect(response.status).toBe(200);
     expect(body.status).toBe('paused');
-    expect(mockDisableWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123');
-    expect(mockEnableWorkflow).not.toHaveBeenCalled();
+    expect(mockPause).toHaveBeenCalledWith('abc-123', TEST_USER_ID);
+    expect(mockResume).not.toHaveBeenCalled();
   });
 
   it('resumes a paused action', async () => {
@@ -704,8 +700,8 @@ describe('POST /api/actions/[id]/toggle', () => {
 
     expect(response.status).toBe(200);
     expect(body.status).toBe('active');
-    expect(mockEnableWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123');
-    expect(mockDisableWorkflow).not.toHaveBeenCalled();
+    expect(mockResume).toHaveBeenCalledWith('abc-123', TEST_USER_ID);
+    expect(mockPause).not.toHaveBeenCalled();
   });
 
   it('returns 404 when action not found', async () => {
@@ -720,14 +716,14 @@ describe('POST /api/actions/[id]/toggle', () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe('Action not found');
-    expect(mockDisableWorkflow).not.toHaveBeenCalled();
-    expect(mockEnableWorkflow).not.toHaveBeenCalled();
+    expect(mockPause).not.toHaveBeenCalled();
+    expect(mockResume).not.toHaveBeenCalled();
   });
 
-  it('returns 502 when GitHub fails and does not update Supabase', async () => {
+  it('returns 502 when engine fails and does not update Supabase', async () => {
     const existingRow = makeRow({ status: 'active' });
     mockFetchExisting(existingRow);
-    mockDisableWorkflow.mockRejectedValue(new Error('GitHub API error'));
+    mockPause.mockRejectedValue(new Error('GitHub API error'));
 
     const { POST } = await import('@/app/api/actions/[id]/toggle/route');
     const request = new Request('http://localhost/api/actions/abc-123/toggle', { method: 'POST' });
@@ -737,7 +733,7 @@ describe('POST /api/actions/[id]/toggle', () => {
     const body = await response.json();
 
     expect(response.status).toBe(502);
-    expect(body.error).toBe('GitHub operation failed');
+    expect(body.error).toBe('Engine operation failed');
     // mockFrom called once for fetch, should NOT be called again for update
     expect(mockFrom).toHaveBeenCalledTimes(1);
   });
@@ -763,7 +759,7 @@ describe('POST /api/actions/[id]/toggle', () => {
 describe('POST /api/actions/[id]/trigger', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockTriggerWorkflow.mockResolvedValue(undefined);
+    mockTrigger.mockResolvedValue(undefined);
   });
 
   function mockFetchExisting(row: { id: string; status?: string; user_id?: string } | null, error: unknown = null) {
@@ -785,7 +781,7 @@ describe('POST /api/actions/[id]/trigger', () => {
 
     expect(response.status).toBe(200);
     expect(body.message).toBe('Workflow triggered successfully');
-    expect(mockTriggerWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123');
+    expect(mockTrigger).toHaveBeenCalledWith('abc-123', TEST_USER_ID);
   });
 
   it('returns 409 when action is paused', async () => {
@@ -800,7 +796,7 @@ describe('POST /api/actions/[id]/trigger', () => {
 
     expect(response.status).toBe(409);
     expect(body.error).toBe('Action is paused');
-    expect(mockTriggerWorkflow).not.toHaveBeenCalled();
+    expect(mockTrigger).not.toHaveBeenCalled();
   });
 
   it('returns 404 when action not found', async () => {
@@ -815,12 +811,12 @@ describe('POST /api/actions/[id]/trigger', () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe('Action not found');
-    expect(mockTriggerWorkflow).not.toHaveBeenCalled();
+    expect(mockTrigger).not.toHaveBeenCalled();
   });
 
   it('returns 502 when GitHub trigger fails', async () => {
     mockFetchExisting({ id: 'abc-123', status: 'active', user_id: TEST_USER_ID });
-    mockTriggerWorkflow.mockRejectedValue(new Error('GitHub dispatch error'));
+    mockTrigger.mockRejectedValue(new Error('GitHub dispatch error'));
 
     const { POST } = await import('@/app/api/actions/[id]/trigger/route');
     const request = new Request('http://localhost/api/actions/abc-123/trigger', { method: 'POST' });
@@ -830,7 +826,7 @@ describe('POST /api/actions/[id]/trigger', () => {
     const body = await response.json();
 
     expect(response.status).toBe(502);
-    expect(body.error).toBe('GitHub operation failed');
+    expect(body.error).toBe('Execution failed');
     expect(body.details).toContain('GitHub dispatch error');
   });
 });
@@ -855,7 +851,7 @@ describe('GET /api/actions/[id]/runs', () => {
 
   it('returns run history for an action', async () => {
     mockFetchExisting({ id: 'abc-123', user_id: TEST_USER_ID });
-    mockGetWorkflowRuns.mockResolvedValue(sampleRuns);
+    mockGetRuns.mockResolvedValue(sampleRuns);
 
     const { GET } = await import('@/app/api/actions/[id]/runs/route');
     const request = new Request('http://localhost/api/actions/abc-123/runs');
@@ -867,12 +863,12 @@ describe('GET /api/actions/[id]/runs', () => {
     expect(response.status).toBe(200);
     expect(body).toHaveLength(2);
     expect(body[0].status).toBe('success');
-    expect(mockGetWorkflowRuns).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123', 1, undefined);
+    expect(mockGetRuns).toHaveBeenCalledWith('abc-123', TEST_USER_ID, 1, undefined);
   });
 
   it('passes page and status query params', async () => {
     mockFetchExisting({ id: 'abc-123', user_id: TEST_USER_ID });
-    mockGetWorkflowRuns.mockResolvedValue(sampleRuns);
+    mockGetRuns.mockResolvedValue(sampleRuns);
 
     const { GET } = await import('@/app/api/actions/[id]/runs/route');
     const request = new Request('http://localhost/api/actions/abc-123/runs?page=3&status=success');
@@ -881,12 +877,12 @@ describe('GET /api/actions/[id]/runs', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mockGetWorkflowRuns).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123', 3, 'success');
+    expect(mockGetRuns).toHaveBeenCalledWith('abc-123', TEST_USER_ID, 3, 'success');
   });
 
   it('defaults page to 1 for invalid values', async () => {
     mockFetchExisting({ id: 'abc-123', user_id: TEST_USER_ID });
-    mockGetWorkflowRuns.mockResolvedValue([]);
+    mockGetRuns.mockResolvedValue([]);
 
     const { GET } = await import('@/app/api/actions/[id]/runs/route');
     const request = new Request('http://localhost/api/actions/abc-123/runs?page=abc');
@@ -895,7 +891,7 @@ describe('GET /api/actions/[id]/runs', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mockGetWorkflowRuns).toHaveBeenCalledWith(TEST_USER_ID, 'abc-123', 1, undefined);
+    expect(mockGetRuns).toHaveBeenCalledWith('abc-123', TEST_USER_ID, 1, undefined);
   });
 
   it('caps results at 100 entries', async () => {
@@ -907,7 +903,7 @@ describe('GET /api/actions/[id]/runs', () => {
       output: `Run ${i}`,
       trigger: 'schedule' as const,
     }));
-    mockGetWorkflowRuns.mockResolvedValue(manyRuns);
+    mockGetRuns.mockResolvedValue(manyRuns);
 
     const { GET } = await import('@/app/api/actions/[id]/runs/route');
     const request = new Request('http://localhost/api/actions/abc-123/runs');
@@ -932,12 +928,12 @@ describe('GET /api/actions/[id]/runs', () => {
 
     expect(response.status).toBe(404);
     expect(body.error).toBe('Action not found');
-    expect(mockGetWorkflowRuns).not.toHaveBeenCalled();
+    expect(mockGetRuns).not.toHaveBeenCalled();
   });
 
   it('returns 502 when GitHub API fails', async () => {
     mockFetchExisting({ id: 'abc-123', user_id: TEST_USER_ID });
-    mockGetWorkflowRuns.mockRejectedValue(new Error('GitHub runs error'));
+    mockGetRuns.mockRejectedValue(new Error('GitHub runs error'));
 
     const { GET } = await import('@/app/api/actions/[id]/runs/route');
     const request = new Request('http://localhost/api/actions/abc-123/runs');

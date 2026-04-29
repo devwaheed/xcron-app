@@ -41,23 +41,15 @@ vi.mock('@/lib/supabase-server', () => ({
   })),
 }));
 
-const mockCommitScript = vi.fn();
-const mockCommitWorkflow = vi.fn();
-const mockDeleteScript = vi.fn();
-const mockDeleteWorkflow = vi.fn();
+const mockDeploy = vi.fn();
+const mockUndeploy = vi.fn();
 
-vi.mock('@/lib/github-bridge', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@/lib/github-bridge')>();
-  return {
-    ...original,
-    createGitHubBridge: () => ({
-      commitScript: mockCommitScript,
-      commitWorkflow: mockCommitWorkflow,
-      deleteScript: mockDeleteScript,
-      deleteWorkflow: mockDeleteWorkflow,
-    }),
-  };
-});
+vi.mock('@/lib/engine-factory', () => ({
+  getEngine: () => ({
+    deploy: mockDeploy,
+    undeploy: mockUndeploy,
+  }),
+}));
 
 vi.mock('@/lib/workflow-generator', () => ({
   generate: () => 'name: mock-workflow\n',
@@ -243,13 +235,13 @@ describe('Property 5: GitHub-first transactional guarantee', () => {
     vi.clearAllMocks();
   });
 
-  it('POST: when GitHub fails, Supabase is never called', async () => {
+  it('POST: when engine fails, Supabase is never called', async () => {
     const { POST } = await import('@/app/api/actions/route');
 
     await fc.assert(
       fc.asyncProperty(arbitraryAction, async (action) => {
         vi.clearAllMocks();
-        mockCommitScript.mockRejectedValue(new Error('GitHub down'));
+        mockDeploy.mockRejectedValue(new Error('GitHub down'));
 
         const body = {
           name: action.name,
@@ -266,7 +258,7 @@ describe('Property 5: GitHub-first transactional guarantee', () => {
     );
   });
 
-  it('PUT: when GitHub fails, Supabase update is never called', async () => {
+  it('PUT: when engine fails, Supabase update is never called', async () => {
     const { PUT } = await import('@/app/api/actions/[id]/route');
 
     await fc.assert(
@@ -275,8 +267,8 @@ describe('Property 5: GitHub-first transactional guarantee', () => {
 
         // First call: fetch existing action (succeeds)
         setupSupabaseFetchExisting(actionToRow(action));
-        // GitHub fails
-        mockCommitScript.mockRejectedValue(new Error('GitHub down'));
+        // Engine fails
+        mockDeploy.mockRejectedValue(new Error('GitHub down'));
 
         const body = {
           name: action.name,
@@ -295,7 +287,7 @@ describe('Property 5: GitHub-first transactional guarantee', () => {
     );
   });
 
-  it('DELETE: when GitHub fails, Supabase delete is never called', async () => {
+  it('DELETE: when engine fails, Supabase delete is never called', async () => {
     const { DELETE } = await import('@/app/api/actions/[id]/route');
 
     await fc.assert(
@@ -304,8 +296,8 @@ describe('Property 5: GitHub-first transactional guarantee', () => {
 
         // First call: fetch existing action (succeeds)
         setupSupabaseFetchExisting(actionToRow(action));
-        // GitHub fails
-        mockDeleteScript.mockRejectedValue(new Error('GitHub down'));
+        // Engine fails
+        mockUndeploy.mockRejectedValue(new Error('GitHub down'));
 
         const response = await DELETE(makeDeleteRequest() as any, {
           params: Promise.resolve({ id: action.id }),
@@ -332,18 +324,16 @@ describe('Property 5: GitHub-first transactional guarantee', () => {
 describe('Property 3: Action creation persists to both stores', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCommitScript.mockResolvedValue(undefined);
-    mockCommitWorkflow.mockResolvedValue(undefined);
+    mockDeploy.mockResolvedValue(undefined);
   });
 
-  it('for any valid action config, both GitHubBridge and Supabase are called on create', async () => {
+  it('for any valid action config, both engine and Supabase are called on create', async () => {
     const { POST } = await import('@/app/api/actions/route');
 
     await fc.assert(
       fc.asyncProperty(arbitraryAction, async (action) => {
         vi.clearAllMocks();
-        mockCommitScript.mockResolvedValue(undefined);
-        mockCommitWorkflow.mockResolvedValue(undefined);
+        mockDeploy.mockResolvedValue(undefined);
 
         const row = actionToRow({ ...action, id: 'test-uuid-prop' });
         setupSupabaseInsert(row);
@@ -356,9 +346,12 @@ describe('Property 3: Action creation persists to both stores', () => {
         const response = await POST(makePostRequest(body) as any);
 
         expect(response.status).toBe(201);
-        // GitHub was called
-        expect(mockCommitScript).toHaveBeenCalledWith(TEST_USER_ID, 'test-uuid-prop', action.scriptContent);
-        expect(mockCommitWorkflow).toHaveBeenCalledWith(TEST_USER_ID, 'test-uuid-prop', 'name: mock-workflow\n');
+        // Engine deploy was called with an action object and userId
+        expect(mockDeploy).toHaveBeenCalledTimes(1);
+        expect(mockDeploy).toHaveBeenCalledWith(
+          expect.objectContaining({ id: 'test-uuid-prop', userId: TEST_USER_ID }),
+          TEST_USER_ID,
+        );
         // Supabase was called
         expect(mockFrom).toHaveBeenCalled();
       }),
@@ -379,8 +372,7 @@ describe('Property 3: Action creation persists to both stores', () => {
 describe('Property 7: Action update persists to both stores', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCommitScript.mockResolvedValue(undefined);
-    mockCommitWorkflow.mockResolvedValue(undefined);
+    mockDeploy.mockResolvedValue(undefined);
   });
 
   it('for any valid action update, both stores are updated', async () => {
@@ -389,8 +381,7 @@ describe('Property 7: Action update persists to both stores', () => {
     await fc.assert(
       fc.asyncProperty(arbitraryAction, async (action) => {
         vi.clearAllMocks();
-        mockCommitScript.mockResolvedValue(undefined);
-        mockCommitWorkflow.mockResolvedValue(undefined);
+        mockDeploy.mockResolvedValue(undefined);
 
         const existingRow = actionToRow(action);
         // Fetch existing
@@ -409,9 +400,12 @@ describe('Property 7: Action update persists to both stores', () => {
         });
 
         expect(response.status).toBe(200);
-        // GitHub was called
-        expect(mockCommitScript).toHaveBeenCalledWith(TEST_USER_ID, action.id, action.scriptContent);
-        expect(mockCommitWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id, 'name: mock-workflow\n');
+        // Engine deploy was called with an action object and userId
+        expect(mockDeploy).toHaveBeenCalledTimes(1);
+        expect(mockDeploy).toHaveBeenCalledWith(
+          expect.objectContaining({ id: action.id, userId: TEST_USER_ID }),
+          TEST_USER_ID,
+        );
         // Supabase was called twice: once for fetch, once for update
         expect(mockFrom).toHaveBeenCalledTimes(2);
       }),
@@ -432,8 +426,7 @@ describe('Property 7: Action update persists to both stores', () => {
 describe('Property 8: Action deletion removes from both stores', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDeleteScript.mockResolvedValue(undefined);
-    mockDeleteWorkflow.mockResolvedValue(undefined);
+    mockUndeploy.mockResolvedValue(undefined);
   });
 
   it('for any action, deletion removes from both stores', async () => {
@@ -442,8 +435,7 @@ describe('Property 8: Action deletion removes from both stores', () => {
     await fc.assert(
       fc.asyncProperty(arbitraryAction, async (action) => {
         vi.clearAllMocks();
-        mockDeleteScript.mockResolvedValue(undefined);
-        mockDeleteWorkflow.mockResolvedValue(undefined);
+        mockUndeploy.mockResolvedValue(undefined);
 
         const existingRow = actionToRow(action);
         // Fetch existing
@@ -456,9 +448,9 @@ describe('Property 8: Action deletion removes from both stores', () => {
         });
 
         expect(response.status).toBe(200);
-        // GitHub was called to delete both files
-        expect(mockDeleteScript).toHaveBeenCalledWith(TEST_USER_ID, action.id);
-        expect(mockDeleteWorkflow).toHaveBeenCalledWith(TEST_USER_ID, action.id);
+        // Engine undeploy was called with (actionId, userId)
+        expect(mockUndeploy).toHaveBeenCalledTimes(1);
+        expect(mockUndeploy).toHaveBeenCalledWith(action.id, TEST_USER_ID);
         // Supabase was called twice: once for fetch, once for delete
         expect(mockFrom).toHaveBeenCalledTimes(2);
       }),

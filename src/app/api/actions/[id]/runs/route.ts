@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAuthenticatedClient } from '@/lib/supabase-server';
-import { createGitHubBridge } from '@/lib/github-bridge';
+import { getEngine } from '@/lib/engine-factory';
 
 const MAX_ENTRIES = 100;
 
@@ -50,9 +50,9 @@ export async function GET(
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
     const status = searchParams.get('status') ?? undefined;
 
-    const bridge = createGitHubBridge();
+    const engine = getEngine();
     try {
-      const runs = await bridge.getWorkflowRuns(userId, id, page, status);
+      const runs = await engine.getRuns(id, userId, page, status);
       return NextResponse.json(runs.slice(0, MAX_ENTRIES));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';

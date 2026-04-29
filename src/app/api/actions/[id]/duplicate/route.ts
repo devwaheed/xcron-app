@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAuthenticatedClient } from '@/lib/supabase-server';
 import { mapRowToAction } from '@/lib/mapRowToAction';
-import { generate } from '@/lib/workflow-generator';
-import { createGitHubBridge } from '@/lib/github-bridge';
 import { createCronJobBridge } from '@/lib/cronjob-bridge';
 import { checkActionLimit } from '@/lib/usage-tracker';
+import { getEngine } from '@/lib/engine-factory';
 import type { Action } from '@/types';
 
 /**
@@ -78,15 +77,13 @@ export async function POST(
       userId,
     };
 
-    // Commit to GitHub
-    const bridge = createGitHubBridge();
-    const workflowYaml = generate(newAction, userId);
+    // Deploy via execution engine
+    const engine = getEngine();
     try {
-      await bridge.commitScript(userId, newId, source.script_content);
-      await bridge.commitWorkflow(userId, newId, workflowYaml);
+      await engine.deploy(newAction, userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      return NextResponse.json({ error: 'GitHub operation failed', details: message }, { status: 502 });
+      return NextResponse.json({ error: 'Deployment failed', details: message }, { status: 502 });
     }
 
     // Create cron job (paused)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseServerClient, getAuthenticatedClient } from '@/lib/supabase-server';
-import { createGitHubBridge } from '@/lib/github-bridge';
+import { getEngine } from '@/lib/engine-factory';
 import { checkRunLimit, recordRun } from '@/lib/usage-tracker';
 import { sendJobFailureAlert } from '@/lib/email';
 
@@ -89,13 +89,13 @@ export async function POST(
       console.error('Usage tracking unavailable, allowing trigger');
     }
 
-    const bridge = createGitHubBridge();
+    const engine = getEngine();
     try {
-      await bridge.triggerWorkflow(userId, id);
+      await engine.trigger(id, userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'GitHub operation failed', details: message },
+        { error: 'Execution failed', details: message },
         { status: 502 }
       );
     }
