@@ -12,6 +12,61 @@ export interface GitHubBridge {
   getWorkflowRuns(userId: string, actionId: string, page: number, status?: string): Promise<RunEntry[]>;
 }
 
+/**
+ * GitHub App installation token cache.
+ * Tokens are valid for 1 hour — we cache and refresh at 50 min.
+ */
+let cachedAppToken: { token: string; expiresAt: number } | null = null;
+
+async function getGitHubAppToken(appId: string, privateKey: string, installationId: string): Promise<string> {
+  if (cachedAppToken && Date.now() < cachedAppToken.expiresAt) {
+    return cachedAppToken.token;
+  }
+
+  // Create JWT for GitHub App authentication
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ iat: now - 60, exp: now + 600, iss: appId })).toString("base64url");
+
+  const crypto = await import("crypto");
+  const sign = crypto.createSign("RSA-SHA256");
+  sign.update(`${header}.${payload}`);
+  const signature = sign.sign(privateKey.replace(/\\n/g, "\n"), "base64url");
+  const jwt = `${header}.${payload}.${signature}`;
+
+  // Exchange JWT for installation token
+  const res = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`GitHub App token exchange failed: ${res.status} — ${detail}`);
+  }
+
+  const data = await res.json();
+  cachedAppToken = {
+    token: data.token,
+    expiresAt: Date.now() + 50 * 60 * 1000, // refresh 10 min before expiry
+  };
+  return data.token;
+}
+
+/**
+ * Get the GitHub token to use — prefers GitHub App if configured, falls back to PAT.
+ */
+async function getGitHubToken(env: ReturnType<typeof getEnvConfig>): Promise<string> {
+  if (env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY && env.GITHUB_APP_INSTALLATION_ID) {
+    return getGitHubAppToken(env.GITHUB_APP_ID, env.GITHUB_APP_PRIVATE_KEY, env.GITHUB_APP_INSTALLATION_ID);
+  }
+  return env.GITHUB_PAT;
+}
+
 function getScriptPath(userId: string, actionId: string): string {
   return `scripts/${userId}/${actionId}.js`;
 }
@@ -99,36 +154,41 @@ async function deleteFile(
 
 export function createGitHubBridge(): GitHubBridge {
   const env = getEnvConfig();
-  const { GITHUB_REPO_OWNER: owner, GITHUB_REPO_NAME: repo, GITHUB_PAT: pat } = env;
+  const { GITHUB_REPO_OWNER: owner, GITHUB_REPO_NAME: repo } = env;
+
+  /** Lazily resolve the token (PAT or GitHub App) */
+  const getToken = () => getGitHubToken(env);
 
   return {
     async commitScript(userId: string, actionId: string, scriptContent: string): Promise<void> {
+      const pat = await getToken();
       const path = getScriptPath(userId, actionId);
       await commitFile(owner, repo, path, scriptContent, `Update script for action ${actionId}`, pat);
     },
 
     async commitWorkflow(userId: string, actionId: string, workflowYaml: string): Promise<void> {
+      const pat = await getToken();
       const path = getWorkflowPath(userId, actionId);
       await commitFile(owner, repo, path, workflowYaml, `Update workflow for action ${actionId}`, pat);
     },
 
     async deleteScript(userId: string, actionId: string): Promise<void> {
+      const pat = await getToken();
       const path = getScriptPath(userId, actionId);
       await deleteFile(owner, repo, path, `Delete script for action ${actionId}`, pat);
     },
 
     async deleteWorkflow(userId: string, actionId: string): Promise<void> {
+      const pat = await getToken();
       const path = getWorkflowPath(userId, actionId);
       await deleteFile(owner, repo, path, `Delete workflow for action ${actionId}`, pat);
     },
 
     async enableWorkflow(userId: string, actionId: string): Promise<void> {
+      const pat = await getToken();
       const workflowFileName = `${userId}_${actionId}.yml`;
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/enable`;
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: githubHeaders(pat),
-      });
+      const res = await fetch(url, { method: 'PUT', headers: githubHeaders(pat) });
       if (!res.ok) {
         const detail = await res.text();
         throw new Error(`GitHub API error enabling workflow ${actionId}: ${res.status} ${res.statusText} - ${detail}`);
@@ -136,12 +196,10 @@ export function createGitHubBridge(): GitHubBridge {
     },
 
     async disableWorkflow(userId: string, actionId: string): Promise<void> {
+      const pat = await getToken();
       const workflowFileName = `${userId}_${actionId}.yml`;
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/disable`;
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: githubHeaders(pat),
-      });
+      const res = await fetch(url, { method: 'PUT', headers: githubHeaders(pat) });
       if (!res.ok) {
         const detail = await res.text();
         throw new Error(`GitHub API error disabling workflow ${actionId}: ${res.status} ${res.statusText} - ${detail}`);
@@ -149,6 +207,7 @@ export function createGitHubBridge(): GitHubBridge {
     },
 
     async triggerWorkflow(userId: string, actionId: string): Promise<void> {
+      const pat = await getToken();
       const workflowFileName = `${userId}_${actionId}.yml`;
       const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`;
       const res = await fetch(url, {
@@ -163,6 +222,7 @@ export function createGitHubBridge(): GitHubBridge {
     },
 
     async getWorkflowRuns(userId: string, actionId: string, page: number, status?: string): Promise<RunEntry[]> {
+      const pat = await getToken();
       const workflowFileName = `${userId}_${actionId}.yml`;
       const params = new URLSearchParams({
         page: String(page),
